@@ -41,27 +41,25 @@ export default function WalkInVisitorScreen() {
         setIsSubmitting(true);
 
         try {
-            // Find resident in the unit to assign as host
-            const { data: resident, error: residentError } = await supabase
+            // Try to find a resident in the unit to assign as host (optional for walk-in)
+            const { data: resident } = await supabase
                 .from('user_roles')
                 .select('user_id')
                 .eq('unit_id', formData.unitId)
-                .eq('role', 'resident')
+                .in('role', ['resident', 'owner', 'tenant'])
+                .eq('is_active', true)
                 .limit(1)
                 .maybeSingle();
 
-            if (!resident) {
-                Alert.alert('Error', 'No resident found in this unit. Cannot register visitor.');
-                setIsSubmitting(false);
-                return;
-            }
+            // For walk-in visitors, host_id is optional - use resident if found, otherwise null
+            const hostId = resident?.user_id || null;
 
             const { data: visitor, error: visitorError } = await supabase
                 .from('visitors')
                 .insert({
                     society_id: currentRole?.society_id,
                     unit_id: formData.unitId,
-                    host_id: resident.user_id,
+                    host_id: hostId,
                     visitor_name: formData.visitorName.trim(),
                     visitor_phone: formData.visitorPhone.trim(),
                     purpose: formData.purpose.trim() || null,

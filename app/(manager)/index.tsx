@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 type VisitorStats = {
     total: number;
@@ -85,7 +85,7 @@ export default function ManagerHome() {
     };
 
     const handleCreateAnnouncement = () => {
-        Alert.alert('Create Announcement', 'Announcement creation coming soon!');
+        router.push('/(manager)/create-announcement');
     };
 
     if (isLoading) {

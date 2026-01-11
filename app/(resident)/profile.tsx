@@ -4,22 +4,50 @@ import {
     ListItem,
     PageHeader,
     SectionTitle,
-    TextInput,
+    TextInput
 } from '@/components/shared';
 import { useAuth } from '@/contexts/auth-context';
+import { supabase } from '@/lib/supabase';
+import { showError, showSuccess } from '@/utils';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 export default function ProfileScreen() {
-    const { profile, currentRole, signOut } = useAuth();
+    const { profile, currentRole, signOut, loadUserData } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [fullName, setFullName] = useState(profile?.full_name || '');
     const [phone, setPhone] = useState(profile?.phone || '');
 
     const handleSave = async () => {
-        // TODO: Implement profile update via Supabase
-        Alert.alert('Success', 'Profile updated successfully');
-        setIsEditing(false);
+        if (!profile?.id) return;
+        if (!fullName.trim()) {
+            showError('Full name is required');
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    full_name: fullName.trim(),
+                    phone: phone.trim(),
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', profile.id);
+
+            if (error) throw error;
+
+            await loadUserData(); // Refresh global auth state
+            showSuccess('Profile updated successfully');
+            setIsEditing(false);
+        } catch (error: any) {
+            console.error('Error updating profile:', error);
+            showError(error.message || 'Failed to update profile');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (

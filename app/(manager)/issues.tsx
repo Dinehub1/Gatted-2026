@@ -3,9 +3,10 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
+import { showError, showSuccess } from '@/utils';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Issue = {
     id: string;
@@ -13,7 +14,7 @@ type Issue = {
     description: string | null;
     category: string;
     priority: string;
-    status: string;
+    status: 'open' | 'in-progress' | 'resolved' | 'closed' | 'rejected';
     created_at: string | null;
     unit?: {
         unit_number: string;
@@ -89,34 +90,80 @@ export default function IssuesScreen() {
         }
     };
 
+    const handleStatusUpdate = (issue: Issue) => {
+        Alert.alert(
+            'Update Status',
+            `Change status for "${issue.title}"?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'In Progress',
+                    onPress: () => updateIssueStatus(issue.id, 'in-progress'),
+                },
+                {
+                    text: 'Resolve',
+                    onPress: () => updateIssueStatus(issue.id, 'resolved'),
+                },
+                {
+                    text: 'Close',
+                    onPress: () => updateIssueStatus(issue.id, 'closed'),
+                    style: 'destructive',
+                },
+            ]
+        );
+    };
+
+    const updateIssueStatus = async (id: string, newStatus: string) => {
+        try {
+            const { error } = await supabase
+                .from('issues')
+                .update({
+                    status: newStatus as 'open' | 'in-progress' | 'resolved' | 'closed' | 'rejected',
+                    updated_at: new Date().toISOString(),
+                    resolved_at: newStatus === 'resolved' ? new Date().toISOString() : null,
+                })
+                .eq('id', id);
+
+            if (error) throw error;
+            showSuccess(`Issue marked as ${newStatus}`);
+            loadIssues();
+        } catch (error: any) {
+            console.error('Error updating status:', error);
+            showError(error.message || 'Failed to update status');
+        }
+    };
+
     const renderIssue = ({ item }: { item: Issue }) => (
-        <Card>
-            <CardHeader
-                title={item.title}
-                subtitle={`${item.category} • Unit ${item.unit?.unit_number || 'N/A'}`}
-                icon="construct-outline"
-                iconColor={getPriorityColor(item.priority)}
-            />
-            <View style={styles.issueDetails}>
-                {item.description && (
-                    <Text style={styles.description} numberOfLines={2}>
-                        {item.description}
-                    </Text>
-                )}
-                <View style={styles.metaRow}>
-                    <View style={styles.priorityBadge}>
-                        <Ionicons name="flag" size={12} color={getPriorityColor(item.priority)} />
-                        <Text style={[styles.priorityText, { color: getPriorityColor(item.priority) }]}>
-                            {item.priority.toUpperCase()}
+        <TouchableOpacity onPress={() => handleStatusUpdate(item)} activeOpacity={0.7}>
+            <Card>
+                <CardHeader
+                    title={item.title}
+                    subtitle={`${item.category} • Unit ${item.unit?.unit_number || 'N/A'}`}
+                    icon="construct-outline"
+                    iconColor={getPriorityColor(item.priority)}
+                />
+                <View style={styles.issueDetails}>
+                    {item.description && (
+                        <Text style={styles.description} numberOfLines={2}>
+                            {item.description}
                         </Text>
+                    )}
+                    <View style={styles.metaRow}>
+                        <View style={styles.priorityBadge}>
+                            <Ionicons name="flag" size={12} color={getPriorityColor(item.priority)} />
+                            <Text style={[styles.priorityText, { color: getPriorityColor(item.priority) }]}>
+                                {item.priority.toUpperCase()}
+                            </Text>
+                        </View>
+                        <StatusBadge status={item.status as 'open' | 'in-progress' | 'resolved' | 'closed' | 'rejected'} variant="issue" />
                     </View>
-                    <StatusBadge status={item.status} variant="issue" />
+                    {item.reporter && (
+                        <Text style={styles.reporter}>Reported by: {item.reporter.full_name}</Text>
+                    )}
+                    <Text style={styles.hintText}>Tap to update status</Text>
                 </View>
-                {item.reporter && (
-                    <Text style={styles.reporter}>Reported by: {item.reporter.full_name}</Text>
-                )}
-            </View>
-        </Card>
+            </Card>
+        </TouchableOpacity>
     );
 
     if (isLoading) {
@@ -251,5 +298,12 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#94a3b8',
         marginTop: 4,
+    },
+    hintText: {
+        fontSize: 10,
+        color: '#3b82f6',
+        marginTop: 8,
+        textAlign: 'right',
+        fontStyle: 'italic',
     },
 });

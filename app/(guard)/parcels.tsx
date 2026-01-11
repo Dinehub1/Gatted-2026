@@ -1,13 +1,15 @@
 import { UnitSelector } from '@/components/shared/UnitSelector';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
+import type { Parcel as ParcelType } from '@/types';
+import { showConfirm, showError, showSuccess } from '@/utils';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     FlatList,
+    RefreshControl,
     StyleSheet,
     Text,
     TextInput,
@@ -15,14 +17,7 @@ import {
     View,
 } from 'react-native';
 
-type Parcel = {
-    id: string;
-    tracking_number: string | null;
-    courier_name: string | null;
-    description: string | null;
-    status: string;
-    received_at: string;
-    unit_id: string;
+type Parcel = ParcelType & {
     unit?: { unit_number: string } | null;
     resident?: { full_name: string } | null;
 };
@@ -32,6 +27,7 @@ export default function ParcelsScreen() {
     const { currentRole, profile } = useAuth();
     const [parcels, setParcels] = useState<Parcel[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,32 +50,33 @@ export default function ParcelsScreen() {
             return;
         }
 
-        setIsLoading(true);
+        if (!refreshing) setIsLoading(true);
         try {
-            console.log('Loading parcels for society:', currentRole.society_id);
-
-            // Simpler query without complex joins
             const { data, error } = await supabase
-                .from('parcels' as any)
+                .from('parcels')
                 .select('*')
                 .eq('society_id', currentRole.society_id)
                 .eq('status', 'received')
                 .order('received_at', { ascending: false });
 
-            console.log('Parcels query result:', { data, error });
-
             if (error) {
                 console.error('Error loading parcels:', error);
+                showError(error.message || 'Failed to load parcels');
+                return;
             }
 
             if (data) {
                 // Fetch unit numbers separately
-                const parcelsWithUnits = await Promise.all(data.map(async (parcel: any) => {
-                    const { data: unitData } = await supabase
-                        .from('units')
-                        .select('unit_number')
-                        .eq('id', parcel.unit_id)
-                        .single();
+                const parcelsWithUnits = await Promise.all(data.map(async (parcel: ParcelType) => {
+                    let unitData = null;
+                    if (parcel.unit_id) {
+                        const { data } = await supabase
+                            .from('units')
+                            .select('unit_number')
+                            .eq('id', parcel.unit_id)
+                            .single();
+                        unitData = data;
+                    }
 
                     return {
                         ...parcel,
@@ -91,8 +88,16 @@ export default function ParcelsScreen() {
             }
         } catch (err) {
             console.error('Error loading parcels:', err);
+            showError('Failed to load parcels');
+        } finally {
+            setIsLoading(false);
+            setRefreshing(false);
         }
-        setIsLoading(false);
+    };
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        loadParcels();
     };
 
     const handleUnitSelect = (unitId: string, unitNumber: string) => {
@@ -102,12 +107,12 @@ export default function ParcelsScreen() {
 
     const handleLogParcel = async () => {
         if (!selectedUnitId) {
-            Alert.alert('Error', 'Please select a unit');
+            showError('Please select a unit');
             return;
         }
 
         if (!currentRole?.society_id) {
-            Alert.alert('Error', 'Society not found');
+            showError('Society not found');
             return;
         }
 
@@ -125,7 +130,7 @@ export default function ParcelsScreen() {
 
             // Insert parcel
             const { error } = await supabase
-                .from('parcels' as any)
+                .from('parcels')
                 .insert({
                     society_id: currentRole.society_id,
                     unit_id: selectedUnitId,
@@ -142,13 +147,13 @@ export default function ParcelsScreen() {
                 throw error;
             }
 
-            Alert.alert('Success', `Parcel logged for unit ${selectedUnitNumber}`);
+            showSuccess(`Parcel logged for unit ${selectedUnitNumber}`);
             setShowForm(false);
             resetForm();
             loadParcels();
         } catch (err: any) {
             console.error('Error logging parcel:', err);
-            Alert.alert('Error', err?.message || 'Failed to log parcel');
+            showError(err?.message || 'Failed to log parcel');
         } finally {
             setIsSubmitting(false);
         }
@@ -163,32 +168,27 @@ export default function ParcelsScreen() {
     };
 
     const handleMarkCollected = async (parcelId: string, unitNumber: string) => {
-        Alert.alert(
-            'Mark as Collected',
+        showConfirm(
             `Confirm parcel for ${unitNumber} has been collected?`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Confirm',
-                    onPress: async () => {
-                        try {
-                            const { error } = await supabase
-                                .from('parcels' as any)
-                                .update({
-                                    status: 'collected',
-                                    collected_at: new Date().toISOString(),
-                                    collected_by: profile?.id,
-                                })
-                                .eq('id', parcelId);
+            async () => {
+                try {
+                    const { error } = await supabase
+                        .from('parcels')
+                        .update({
+                            status: 'collected',
+                            collected_at: new Date().toISOString(),
+                            collected_by: profile?.id,
+                        })
+                        .eq('id', parcelId);
 
-                            if (error) throw error;
-                            loadParcels();
-                        } catch (err) {
-                            Alert.alert('Error', 'Failed to update parcel');
-                        }
-                    },
-                },
-            ]
+                    if (error) throw error;
+                    showSuccess('Parcel marked as collected');
+                    loadParcels();
+                } catch (err) {
+                    showError('Failed to update parcel');
+                }
+            },
+            { title: 'Mark as Collected', confirmText: 'Confirm', cancelText: 'Cancel' }
         );
     };
 
@@ -209,7 +209,7 @@ export default function ParcelsScreen() {
                     <Text style={styles.parcelDetail}>#{item.tracking_number}</Text>
                 )}
                 <Text style={styles.parcelTime}>
-                    {new Date(item.received_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                    {item.received_at ? new Date(item.received_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                 </Text>
             </View>
             <View style={styles.collectButton}>
@@ -291,6 +291,13 @@ export default function ParcelsScreen() {
                         renderItem={renderParcel}
                         keyExtractor={item => item.id}
                         showsVerticalScrollIndicator={false}
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={refreshing}
+                                onRefresh={onRefresh}
+                                tintColor="#3b82f6"
+                            />
+                        }
                     />
                 )}
             </View>

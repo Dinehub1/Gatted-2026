@@ -108,28 +108,35 @@ export default function RaiseIssueScreen() {
 
             // Upload photo to Supabase Storage if provided
             if (photoUri) {
-                const fileExt = photoUri.split('.').pop();
-                const fileName = `${Date.now()}.${fileExt}`;
-                const filePath = `issues/${fileName}`;
+                try {
+                    const fileExt = photoUri.split('.').pop() || 'jpg';
+                    const fileName = `${profile.id}_${Date.now()}.${fileExt}`;
+                    const filePath = `issues/${fileName}`;
 
-                const formData = new FormData();
-                formData.append('file', {
-                    uri: photoUri,
-                    name: fileName,
-                    type: `image/${fileExt}`,
-                } as any);
+                    // Convert URI to blob properly for React Native
+                    const response = await fetch(photoUri);
+                    const blob = await response.blob();
 
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('issue-photos')
-                    .upload(filePath, formData);
-
-                if (uploadError) {
-                    console.error('Photo upload error:', uploadError);
-                } else {
-                    const { data } = supabase.storage
+                    const { data: uploadData, error: uploadError } = await supabase.storage
                         .from('issue-photos')
-                        .getPublicUrl(filePath);
-                    photoUrl = data.publicUrl;
+                        .upload(filePath, blob, {
+                            contentType: `image/${fileExt}`,
+                            upsert: false,
+                        });
+
+                    if (uploadError) {
+                        console.error('Photo upload error:', uploadError);
+                        // Continue without photo if upload fails
+                        Alert.alert('Warning', 'Photo upload failed, but issue will be submitted without photo.');
+                    } else {
+                        const { data } = supabase.storage
+                            .from('issue-photos')
+                            .getPublicUrl(filePath);
+                        photoUrl = data.publicUrl;
+                    }
+                } catch (uploadErr) {
+                    console.error('Photo processing error:', uploadErr);
+                    // Continue without photo if upload fails
                 }
             }
 
