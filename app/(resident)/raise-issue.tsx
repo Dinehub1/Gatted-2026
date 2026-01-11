@@ -16,8 +16,8 @@ import {
     View,
 } from 'react-native';
 
-type IssueCategory = 'plumbing' | 'electrical' | 'security' | 'maintenance' | 'cleanliness' | 'other';
-type IssuePriority = 'low' | 'medium' | 'high';
+type IssueCategory = 'plumbing' | 'electrical' | 'security' | 'maintenance' | 'cleaning' | 'parking' | 'noise' | 'other';
+type IssuePriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export default function RaiseIssueScreen() {
     const router = useRouter();
@@ -35,7 +35,7 @@ export default function RaiseIssueScreen() {
         { value: 'electrical', label: 'Electrical', icon: 'flash' },
         { value: 'security', label: 'Security', icon: 'shield' },
         { value: 'maintenance', label: 'Maintenance', icon: 'construct' },
-        { value: 'cleanliness', label: 'Cleanliness', icon: 'trash' },
+        { value: 'cleaning', label: 'Cleaning', icon: 'trash' },
         { value: 'other', label: 'Other', icon: 'ellipsis-horizontal' },
     ];
 
@@ -142,7 +142,7 @@ export default function RaiseIssueScreen() {
                 description: description.trim(),
                 category,
                 priority,
-                status: 'open',
+                status: 'open' as const,
                 photos: photoUrl ? [photoUrl] : [],
             };
 

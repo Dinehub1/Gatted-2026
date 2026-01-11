@@ -7,12 +7,12 @@ import { create } from 'zustand';
 export interface UserRoleData {
     id: string;
     role: UserRoleType;
-    society_id: string;
+    society_id: string | null;
     unit_id: string | null;
     society?: {
         id: string;
         name: string;
-    };
+    } | null;
 }
 
 export interface AuthState {

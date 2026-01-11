@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
-type VisitorType = 'guest' | 'delivery' | 'cab' | 'service';
+type VisitorType = 'expected' | 'walk-in' | 'delivery' | 'service' | 'guest';
 
 export default function PreApproveVisitor() {
     const router = useRouter();
@@ -71,7 +71,7 @@ export default function PreApproveVisitor() {
                 expected_date: expectedDate.toISOString().split('T')[0],
                 expected_time: expectedTime ? expectedTime.toTimeString().slice(0, 5) : null,
                 purpose: purpose.trim() || null,
-                status: 'approved',
+                status: 'approved' as const,
                 otp: otp,
                 otp_expires_at: otpExpiresAt.toISOString(),
             };
@@ -115,7 +115,7 @@ export default function PreApproveVisitor() {
     const visitorTypes: { value: VisitorType; label: string; icon: any }[] = [
         { value: 'guest', label: 'Guest', icon: 'person' },
         { value: 'delivery', label: 'Delivery', icon: 'cube' },
-        { value: 'cab', label: 'Cab', icon: 'car' },
+        { value: 'expected', label: 'Expected', icon: 'car' },
         { value: 'service', label: 'Service', icon: 'construct' },
     ];
 
