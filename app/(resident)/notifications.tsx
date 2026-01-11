@@ -2,6 +2,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { PageHeader, SectionTitle } from '@/components/shared';
 import { useAuth } from '@/contexts/auth-context';
+import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -29,28 +30,29 @@ export default function NotificationsScreen() {
     const [refreshing, setRefreshing] = useState(false);
 
     const loadNotifications = async () => {
+        if (!profile?.id) return;
         try {
-            // TODO: Replace with actual notifications table query
-            // For now, using mock data
-            const mockNotifications: Notification[] = [
-                {
-                    id: '1',
-                    title: 'Visitor Approved',
-                    message: 'Your visitor John Doe has been approved for entry.',
-                    type: 'success',
-                    read: false,
-                    created_at: new Date().toISOString(),
-                },
-                {
-                    id: '2',
-                    title: 'New Announcement',
-                    message: 'Community meeting scheduled for this weekend.',
-                    type: 'info',
-                    read: true,
-                    created_at: new Date(Date.now() - 86400000).toISOString(),
-                },
-            ];
-            setNotifications(mockNotifications);
+            const { data, error } = await supabase
+                .from('notifications')
+                .select('*')
+                .eq('user_id', profile.id)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Map database results to Notification type with defaults
+            const mappedNotifications: Notification[] = (data || []).map(n => ({
+                id: n.id,
+                title: n.title,
+                message: n.message,
+                type: (['info', 'warning', 'success', 'visitor'].includes(n.type || '')
+                    ? n.type as 'info' | 'warning' | 'success' | 'visitor'
+                    : 'info'),
+                read: n.read ?? false,
+                created_at: n.created_at || new Date().toISOString(),
+            }));
+
+            setNotifications(mappedNotifications);
         } catch (error) {
             console.error('Error loading notifications:', error);
         } finally {
@@ -60,8 +62,10 @@ export default function NotificationsScreen() {
     };
 
     useEffect(() => {
-        loadNotifications();
-    }, []);
+        if (profile?.id) {
+            loadNotifications();
+        }
+    }, [profile?.id]);
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -80,10 +84,24 @@ export default function NotificationsScreen() {
         return date.toLocaleDateString();
     };
 
-    const markAsRead = (id: string) => {
-        setNotifications(prev =>
-            prev.map(n => (n.id === id ? { ...n, read: true } : n))
-        );
+    const markAsRead = async (id: string) => {
+        try {
+            // Optimistic update
+            setNotifications(prev =>
+                prev.map(n => (n.id === id ? { ...n, read: true } : n))
+            );
+
+            const { error } = await supabase
+                .from('notifications')
+                .update({ read: true })
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+            // Revert on error
+            loadNotifications();
+        }
     };
 
     const unreadCount = notifications.filter(n => !n.read).length;

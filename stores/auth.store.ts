@@ -1,8 +1,11 @@
 import { supabase, supabaseHelpers } from '@/lib/supabase';
 import type { Profile, UserRoleType } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Session, User } from '@supabase/supabase-js';
+import { Session, Subscription, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
+
+// Store auth subscription for cleanup
+let authSubscription: Subscription | null = null;
 
 export interface UserRoleData {
     id: string;
@@ -35,6 +38,7 @@ export interface AuthState {
     loadUserData: () => Promise<void>;
     setCurrentRole: (role: UserRoleData) => void;
     initialize: () => Promise<void>;
+    cleanup: () => void;
     devLogin: (role: UserRoleType) => Promise<void>;
 }
 
@@ -195,9 +199,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
+    // Cleanup auth subscription to prevent memory leaks
+    cleanup: () => {
+        if (authSubscription) {
+            authSubscription.unsubscribe();
+            authSubscription = null;
+        }
+    },
+
     initialize: async () => {
         try {
             set({ isLoading: true });
+
+            // Cleanup any existing subscription first
+            if (authSubscription) {
+                authSubscription.unsubscribe();
+                authSubscription = null;
+            }
 
             // Check for existing session
             const { data: { session } } = await supabase.auth.getSession();
@@ -212,8 +230,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 await get().loadUserData();
             }
 
-            // Listen for auth changes
-            supabase.auth.onAuthStateChange(async (_event, session) => {
+            // Listen for auth changes and store subscription
+            const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
                 set({
                     session,
                     user: session?.user ?? null,
@@ -230,6 +248,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     });
                 }
             });
+
+            // Store subscription for cleanup
+            authSubscription = subscription;
 
             set({ isLoading: false });
         } catch (error) {

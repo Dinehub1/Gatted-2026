@@ -26,7 +26,7 @@ type IssueSummary = {
 
 export default function ResidentHome() {
     const router = useRouter();
-    const { signOut, profile, currentRole } = useAuth();
+    const { profile, currentRole } = useAuth();
     const [visitorSummary, setVisitorSummary] = useState<VisitorSummary>({ upcoming: 0, today: 0, total: 0 });
     const [issueSummary, setIssueSummary] = useState<IssueSummary>({ open: 0, total: 0 });
     const [isLoading, setIsLoading] = useState(true);

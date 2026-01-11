@@ -9,6 +9,7 @@ import {
 } from '@/components/shared';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -19,7 +20,7 @@ type Stats = {
 
 export default function GuardHome() {
     const { signOut, profile, currentRole } = useAuth();
-    const router = require('expo-router').useRouter();
+    const router = useRouter();
 
     const [stats, setStats] = useState<Stats>({ visitorsToday: 0, currentlyInside: 0 });
     const [isLoading, setIsLoading] = useState(true);

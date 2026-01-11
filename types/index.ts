@@ -34,6 +34,9 @@ export type Issue = Tables['issues']['Row'];
 /** Announcement row - society-wide announcements */
 export type Announcement = Tables['announcements']['Row'];
 
+/** Parcel row - package delivery records */
+export type Parcel = Tables['parcels']['Row'];
+
 // ============================================================
 // Insert Types (for creating new records)
 // ============================================================
@@ -43,6 +46,7 @@ export type UserRoleInsert = Tables['user_roles']['Insert'];
 export type VisitorInsert = Tables['visitors']['Insert'];
 export type IssueInsert = Tables['issues']['Insert'];
 export type AnnouncementInsert = Tables['announcements']['Insert'];
+export type ParcelInsert = Tables['parcels']['Insert'];
 
 // ============================================================
 // Update Types (for updating existing records)
@@ -53,6 +57,7 @@ export type UserRoleUpdate = Tables['user_roles']['Update'];
 export type VisitorUpdate = Tables['visitors']['Update'];
 export type IssueUpdate = Tables['issues']['Update'];
 export type AnnouncementUpdate = Tables['announcements']['Update'];
+export type ParcelUpdate = Tables['parcels']['Update'];
 
 // ============================================================
 // Enum Types (from database)
