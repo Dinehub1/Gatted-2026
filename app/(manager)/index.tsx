@@ -46,7 +46,7 @@ export default function ManagerHome() {
                 .eq('society_id', societyId);
 
             const today = new Date().toISOString().split('T')[0];
-            const todayVisitors = visitors?.filter(v => v.created_at.startsWith(today)) || [];
+            const todayVisitors = visitors?.filter(v => v.created_at?.startsWith(today)) || [];
             const pendingVisitors = visitors?.filter(v => v.status === 'pending') || [];
 
             setVisitorStats({

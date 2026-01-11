@@ -11,13 +11,13 @@ type Visitor = {
     visitor_name: string;
     visitor_type: string;
     status: string;
-    expected_date: string;
-    expected_time?: string;
-    checked_in_at?: string;
-    checked_out_at?: string;
+    expected_date: string | null;
+    expected_time?: string | null;
+    checked_in_at?: string | null;
+    checked_out_at?: string | null;
     unit?: {
         unit_number: string;
-    };
+    } | null;
 };
 
 export default function VisitorsScreen() {

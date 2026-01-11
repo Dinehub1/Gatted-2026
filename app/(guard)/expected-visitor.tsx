@@ -55,7 +55,7 @@ export default function ExpectedVisitorScreen() {
         }
 
         // Log visitor entry
-        const { error } = await supabaseHelpers.logVisitorEntry(visitor.id, profile.id);
+        const { error } = await supabaseHelpers.logVisitorEntry(visitor.id, profile?.id ?? '');
 
         setIsLoading(false);
 
@@ -88,7 +88,7 @@ export default function ExpectedVisitorScreen() {
                 {
                     text: 'Check In',
                     onPress: async () => {
-                        const { error } = await supabaseHelpers.logVisitorEntry(visitorId, profile.id);
+                        const { error } = await supabaseHelpers.logVisitorEntry(visitorId, profile?.id ?? '');
 
                         if (error) {
                             Alert.alert('Error', 'Failed to check in visitor');

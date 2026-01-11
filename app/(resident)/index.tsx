@@ -47,7 +47,7 @@ export default function ResidentHome() {
             const today = now.toISOString().split('T')[0];
 
             const upcoming = visitors?.filter(v =>
-                v.expected_date >= today && ['pending', 'approved'].includes(v.status)
+                v.expected_date && v.expected_date >= today && ['pending', 'approved'].includes(v.status)
             ).length || 0;
 
             const todayVisitors = visitors?.filter(v => v.expected_date === today).length || 0;

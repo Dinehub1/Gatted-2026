@@ -16,6 +16,7 @@ interface Unit {
     id: string;
     unit_number: string;
     block?: string;
+    block_id?: string;
     floor?: number;
 }
 
@@ -65,16 +66,46 @@ export function UnitSelector({
     const loadUnits = async () => {
         setIsLoading(true);
         try {
+            // Join with blocks table to get block name
             const { data, error } = await supabase
                 .from('units')
-                .select('id, unit_number, block, floor')
+                .select(`
+                    id, 
+                    unit_number, 
+                    floor,
+                    block_id,
+                    blocks:block_id (
+                        id,
+                        name
+                    )
+                `)
                 .eq('society_id', societyId)
-                .order('block')
                 .order('floor')
                 .order('unit_number');
 
             if (error) throw error;
-            setUnits(data || []);
+
+            // Transform data to include block name
+            const transformedUnits: Unit[] = (data || []).map((unit: any) => ({
+                id: unit.id,
+                unit_number: unit.unit_number,
+                floor: unit.floor,
+                block_id: unit.block_id,
+                block: unit.blocks?.name || undefined,
+            }));
+
+            // Sort by block name, then floor, then unit number
+            transformedUnits.sort((a, b) => {
+                if (a.block && b.block && a.block !== b.block) {
+                    return a.block.localeCompare(b.block);
+                }
+                if (a.floor !== undefined && b.floor !== undefined && a.floor !== b.floor) {
+                    return a.floor - b.floor;
+                }
+                return a.unit_number.localeCompare(b.unit_number);
+            });
+
+            setUnits(transformedUnits);
         } catch (err) {
             console.error('Error loading units:', err);
         } finally {

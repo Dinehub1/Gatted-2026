@@ -13,11 +13,11 @@ type Visitor = {
     visitor_name: string;
     visitor_type: string;
     status: string;
-    expected_date: string;
-    expected_time?: string;
-    otp?: string;
-    checked_in_at?: string;
-    checked_out_at?: string;
+    expected_date: string | null;
+    expected_time?: string | null;
+    otp?: string | null;
+    checked_in_at?: string | null;
+    checked_out_at?: string | null;
 };
 
 export default function MyVisitorsScreen() {
@@ -81,7 +81,7 @@ export default function MyVisitorsScreen() {
                         try {
                             const { error } = await supabase
                                 .from('visitors')
-                                .update({ status: 'cancelled' })
+                                .update({ status: 'denied' as const })
                                 .eq('id', visitorId);
 
                             if (error) throw error;

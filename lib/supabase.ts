@@ -107,14 +107,13 @@ export const supabaseHelpers = {
         host:profiles!visitors_host_id_fkey(*)
       `)
             .eq('society_id', societyId)
-            .eq('visitor_type', 'expected')
             .in('status', ['pending', 'approved']);
 
         if (date) {
             query = query.eq('expected_date', date);
         }
 
-        return await query.order('expected_time', { ascending: true });
+        return await query.order('expected_time', { ascending: true, nullsFirst: false });
     },
 
     async logVisitorEntry(visitorId: string, guardId: string) {
@@ -146,8 +145,8 @@ export const supabaseHelpers = {
         reported_by: string;
         title: string;
         description?: string;
-        category: string;
-        priority?: string;
+        category: 'plumbing' | 'electrical' | 'cleaning' | 'security' | 'maintenance' | 'parking' | 'noise' | 'other';
+        priority?: 'low' | 'medium' | 'high' | 'urgent';
         photos?: string[];
     }) {
         return await supabase
@@ -158,8 +157,8 @@ export const supabaseHelpers = {
     },
 
     async getIssues(societyId: string, filters?: {
-        status?: string;
-        category?: string;
+        status?: 'open' | 'in-progress' | 'resolved' | 'closed' | 'rejected';
+        category?: 'plumbing' | 'electrical' | 'cleaning' | 'security' | 'maintenance' | 'parking' | 'noise' | 'other';
         reported_by?: string;
     }) {
         let query = supabase

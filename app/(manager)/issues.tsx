@@ -10,17 +10,17 @@ import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } fr
 type Issue = {
     id: string;
     title: string;
-    description: string;
+    description: string | null;
     category: string;
     priority: string;
     status: string;
-    created_at: string;
+    created_at: string | null;
     unit?: {
         unit_number: string;
-    };
+    } | null;
     reporter?: {
-        full_name: string;
-    };
+        full_name: string | null;
+    } | null;
 };
 
 export default function IssuesScreen() {

@@ -68,7 +68,7 @@ export default function WalkInVisitorScreen() {
                     visitor_type: 'walk-in',
                     status: 'checked-in',
                     checked_in_at: new Date().toISOString(),
-                    checked_in_by: profile.id,
+                    checked_in_by: profile?.id ?? '',
                 })
                 .select()
                 .single();
