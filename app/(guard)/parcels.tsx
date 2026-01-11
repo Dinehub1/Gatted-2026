@@ -43,28 +43,51 @@ export default function ParcelsScreen() {
     const [description, setDescription] = useState('');
 
     useEffect(() => {
-        loadParcels();
-    }, []);
+        if (currentRole?.society_id) {
+            loadParcels();
+        }
+    }, [currentRole?.society_id]);
 
     const loadParcels = async () => {
-        if (!currentRole?.society_id) return;
+        if (!currentRole?.society_id) {
+            console.log('No society_id found');
+            return;
+        }
 
         setIsLoading(true);
         try {
-            // Use raw query since parcels table may not be in types yet
+            console.log('Loading parcels for society:', currentRole.society_id);
+
+            // Simpler query without complex joins
             const { data, error } = await supabase
                 .from('parcels' as any)
-                .select(`
-                    *,
-                    unit:units(unit_number),
-                    resident:profiles!parcels_resident_id_fkey(full_name)
-                `)
+                .select('*')
                 .eq('society_id', currentRole.society_id)
                 .eq('status', 'received')
                 .order('received_at', { ascending: false });
 
-            if (!error && data) {
-                setParcels(data as unknown as Parcel[]);
+            console.log('Parcels query result:', { data, error });
+
+            if (error) {
+                console.error('Error loading parcels:', error);
+            }
+
+            if (data) {
+                // Fetch unit numbers separately
+                const parcelsWithUnits = await Promise.all(data.map(async (parcel: any) => {
+                    const { data: unitData } = await supabase
+                        .from('units')
+                        .select('unit_number')
+                        .eq('id', parcel.unit_id)
+                        .single();
+
+                    return {
+                        ...parcel,
+                        unit: unitData
+                    };
+                }));
+
+                setParcels(parcelsWithUnits as Parcel[]);
             }
         } catch (err) {
             console.error('Error loading parcels:', err);
