@@ -1,3 +1,4 @@
+import { UnitSelector } from '@/components/shared/UnitSelector';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +22,9 @@ type Parcel = {
     description: string | null;
     status: string;
     received_at: string;
-    unit_number?: string;
+    unit_id: string;
+    unit?: { unit_number: string } | null;
+    resident?: { full_name: string } | null;
 };
 
 export default function ParcelsScreen() {
@@ -33,7 +36,8 @@ export default function ParcelsScreen() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form state
-    const [unitNumber, setUnitNumber] = useState('');
+    const [selectedUnitId, setSelectedUnitId] = useState('');
+    const [selectedUnitNumber, setSelectedUnitNumber] = useState('');
     const [courierName, setCourierName] = useState('');
     const [trackingNumber, setTrackingNumber] = useState('');
     const [description, setDescription] = useState('');
@@ -46,15 +50,36 @@ export default function ParcelsScreen() {
         if (!currentRole?.society_id) return;
 
         setIsLoading(true);
-        // For now, just show empty - parcels table will work once types are regenerated
-        // This is a workaround until database.types.ts includes the parcels table
-        setParcels([]);
+        try {
+            // Use raw query since parcels table may not be in types yet
+            const { data, error } = await supabase
+                .from('parcels' as any)
+                .select(`
+                    *,
+                    unit:units(unit_number),
+                    resident:profiles!parcels_resident_id_fkey(full_name)
+                `)
+                .eq('society_id', currentRole.society_id)
+                .eq('status', 'received')
+                .order('received_at', { ascending: false });
+
+            if (!error && data) {
+                setParcels(data as unknown as Parcel[]);
+            }
+        } catch (err) {
+            console.error('Error loading parcels:', err);
+        }
         setIsLoading(false);
     };
 
+    const handleUnitSelect = (unitId: string, unitNumber: string) => {
+        setSelectedUnitId(unitId);
+        setSelectedUnitNumber(unitNumber);
+    };
+
     const handleLogParcel = async () => {
-        if (!unitNumber.trim()) {
-            Alert.alert('Error', 'Please enter unit number');
+        if (!selectedUnitId) {
+            Alert.alert('Error', 'Please select a unit');
             return;
         }
 
@@ -65,44 +90,95 @@ export default function ParcelsScreen() {
 
         setIsSubmitting(true);
 
-        // Find unit
-        const { data: unit } = await supabase
-            .from('units')
-            .select('id')
-            .eq('society_id', currentRole.society_id)
-            .eq('unit_number', unitNumber.trim().toUpperCase())
-            .single();
+        try {
+            // Find resident for this unit
+            const { data: userRole } = await supabase
+                .from('user_roles')
+                .select('user_id')
+                .eq('unit_id', selectedUnitId)
+                .eq('role', 'resident')
+                .eq('is_active', true)
+                .single();
 
-        if (!unit) {
-            Alert.alert('Error', 'Unit not found');
+            // Insert parcel
+            const { error } = await supabase
+                .from('parcels' as any)
+                .insert({
+                    society_id: currentRole.society_id,
+                    unit_id: selectedUnitId,
+                    resident_id: userRole?.user_id || null,
+                    courier_name: courierName.trim() || null,
+                    tracking_number: trackingNumber.trim() || null,
+                    description: description.trim() || null,
+                    received_by: profile?.id,
+                    status: 'received',
+                });
+
+            if (error) {
+                console.error('Error inserting parcel:', error);
+                throw error;
+            }
+
+            Alert.alert('Success', `Parcel logged for unit ${selectedUnitNumber}`);
+            setShowForm(false);
+            resetForm();
+            loadParcels();
+        } catch (err: any) {
+            console.error('Error logging parcel:', err);
+            Alert.alert('Error', err?.message || 'Failed to log parcel');
+        } finally {
             setIsSubmitting(false);
-            return;
         }
+    };
 
-        // For now, show success - actual insert will work once types are updated
-        Alert.alert('Success', `Parcel logged for unit ${unitNumber.trim().toUpperCase()}`);
-        setIsSubmitting(false);
-        setShowForm(false);
-        setUnitNumber('');
+    const resetForm = () => {
+        setSelectedUnitId('');
+        setSelectedUnitNumber('');
         setCourierName('');
         setTrackingNumber('');
         setDescription('');
     };
 
-    const handleMarkCollected = async (parcelId: string) => {
-        Alert.alert('Success', 'Parcel marked as collected');
+    const handleMarkCollected = async (parcelId: string, unitNumber: string) => {
+        Alert.alert(
+            'Mark as Collected',
+            `Confirm parcel for ${unitNumber} has been collected?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Confirm',
+                    onPress: async () => {
+                        try {
+                            const { error } = await supabase
+                                .from('parcels' as any)
+                                .update({
+                                    status: 'collected',
+                                    collected_at: new Date().toISOString(),
+                                    collected_by: profile?.id,
+                                })
+                                .eq('id', parcelId);
+
+                            if (error) throw error;
+                            loadParcels();
+                        } catch (err) {
+                            Alert.alert('Error', 'Failed to update parcel');
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const renderParcel = ({ item }: { item: Parcel }) => (
         <TouchableOpacity
             style={styles.parcelCard}
-            onPress={() => handleMarkCollected(item.id)}
+            onPress={() => handleMarkCollected(item.id, item.unit?.unit_number || 'Unknown')}
         >
             <View style={styles.parcelIcon}>
                 <Ionicons name="cube" size={24} color="#f59e0b" />
             </View>
             <View style={styles.parcelInfo}>
-                <Text style={styles.parcelUnit}>Unit: {item.unit_number || 'N/A'}</Text>
+                <Text style={styles.parcelUnit}>Unit: {item.unit?.unit_number || 'N/A'}</Text>
                 {item.courier_name && (
                     <Text style={styles.parcelDetail}>{item.courier_name}</Text>
                 )}
@@ -131,17 +207,18 @@ export default function ParcelsScreen() {
                 </TouchableOpacity>
             </View>
 
-            {showForm && (
+            {showForm && currentRole?.society_id && (
                 <View style={styles.formContainer}>
                     <Text style={styles.formTitle}>Log New Parcel</Text>
 
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Unit Number *"
-                        value={unitNumber}
-                        onChangeText={setUnitNumber}
-                        autoCapitalize="characters"
+                    <UnitSelector
+                        label="Destination Unit"
+                        societyId={currentRole.society_id}
+                        value={selectedUnitId}
+                        onSelect={handleUnitSelect}
+                        required
                     />
+
                     <TextInput
                         style={styles.input}
                         placeholder="Courier Name (e.g., Amazon, Flipkart)"
