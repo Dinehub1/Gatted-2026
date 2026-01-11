@@ -1,21 +1,38 @@
 import { useAuth } from '@/contexts/auth-context';
 import { supabaseHelpers } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
+import { BarCodeScanner } from 'expo-barcode-scanner';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+type VerifyMode = 'otp' | 'qr';
+
 export default function ExpectedVisitorScreen() {
     const router = useRouter();
     const { currentRole, profile } = useAuth();
+    const [mode, setMode] = useState<VerifyMode>('otp');
     const [otp, setOtp] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [expectedVisitors, setExpectedVisitors] = useState<any[]>([]);
     const [loadingVisitors, setLoadingVisitors] = useState(true);
+    const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+    const [scanned, setScanned] = useState(false);
 
     useEffect(() => {
         loadExpectedVisitors();
     }, []);
+
+    useEffect(() => {
+        if (mode === 'qr') {
+            requestCameraPermission();
+        }
+    }, [mode]);
+
+    const requestCameraPermission = async () => {
+        const { status } = await BarCodeScanner.requestPermissionsAsync();
+        setHasPermission(status === 'granted');
+    };
 
     const loadExpectedVisitors = async () => {
         if (!currentRole?.society_id) return;
@@ -30,6 +47,24 @@ export default function ExpectedVisitorScreen() {
         setLoadingVisitors(false);
     };
 
+    const checkInVisitor = async (visitorId: string, visitorName: string) => {
+        setIsLoading(true);
+        const { error } = await supabaseHelpers.logVisitorEntry(visitorId, profile?.id ?? '');
+        setIsLoading(false);
+
+        if (error) {
+            Alert.alert('Error', 'Failed to check in visitor');
+            return false;
+        }
+
+        Alert.alert(
+            '✅ Visitor Checked In',
+            `${visitorName} has been checked in successfully.`,
+            [{ text: 'OK', onPress: () => loadExpectedVisitors() }]
+        );
+        return true;
+    };
+
     const handleVerifyOTP = async () => {
         if (!otp || otp.length !== 6) {
             Alert.alert('Error', 'Please enter a valid 6-digit OTP');
@@ -37,8 +72,6 @@ export default function ExpectedVisitorScreen() {
         }
 
         setIsLoading(true);
-
-        // Find visitor by OTP
         const visitor = expectedVisitors.find(v => v.otp === otp);
 
         if (!visitor) {
@@ -47,36 +80,54 @@ export default function ExpectedVisitorScreen() {
             return;
         }
 
-        // Check if OTP is expired
         if (new Date(visitor.otp_expires_at) < new Date()) {
             Alert.alert('Error', 'OTP has expired. Please ask the resident to generate a new one.');
             setIsLoading(false);
             return;
         }
 
-        // Log visitor entry
-        const { error } = await supabaseHelpers.logVisitorEntry(visitor.id, profile?.id ?? '');
+        const success = await checkInVisitor(visitor.id, visitor.visitor_name);
+        if (success) setOtp('');
+    };
 
-        setIsLoading(false);
+    const handleBarCodeScanned = async ({ data }: { data: string }) => {
+        if (scanned) return;
+        setScanned(true);
 
-        if (error) {
-            Alert.alert('Error', 'Failed to check in visitor');
-            return;
+        try {
+            const qrData = JSON.parse(data);
+            const { visitorId, otp: qrOtp, visitorName } = qrData;
+
+            if (!visitorId || !qrOtp) {
+                Alert.alert('Error', 'Invalid QR code format', [
+                    { text: 'OK', onPress: () => setScanned(false) }
+                ]);
+                return;
+            }
+
+            const visitor = expectedVisitors.find(v => v.id === visitorId && v.otp === qrOtp);
+
+            if (!visitor) {
+                Alert.alert('Error', 'Visitor not found or invalid QR code', [
+                    { text: 'OK', onPress: () => setScanned(false) }
+                ]);
+                return;
+            }
+
+            if (new Date(visitor.otp_expires_at) < new Date()) {
+                Alert.alert('Error', 'QR code has expired', [
+                    { text: 'OK', onPress: () => setScanned(false) }
+                ]);
+                return;
+            }
+
+            await checkInVisitor(visitor.id, visitorName || visitor.visitor_name);
+            setScanned(false);
+        } catch (e) {
+            Alert.alert('Error', 'Could not read QR code', [
+                { text: 'OK', onPress: () => setScanned(false) }
+            ]);
         }
-
-        Alert.alert(
-            '✅ Visitor Checked In',
-            `${visitor.visitor_name} has been checked in successfully.`,
-            [
-                {
-                    text: 'OK',
-                    onPress: () => {
-                        setOtp('');
-                        loadExpectedVisitors();
-                    },
-                },
-            ]
-        );
     };
 
     const handleCheckInVisitor = async (visitorId: string, visitorName: string) => {
@@ -85,20 +136,7 @@ export default function ExpectedVisitorScreen() {
             `Check in ${visitorName}?`,
             [
                 { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Check In',
-                    onPress: async () => {
-                        const { error } = await supabaseHelpers.logVisitorEntry(visitorId, profile?.id ?? '');
-
-                        if (error) {
-                            Alert.alert('Error', 'Failed to check in visitor');
-                            return;
-                        }
-
-                        Alert.alert('✅ Success', `${visitorName} checked in successfully`);
-                        loadExpectedVisitors();
-                    },
-                },
+                { text: 'Check In', onPress: () => checkInVisitor(visitorId, visitorName) },
             ]
         );
     };
@@ -117,7 +155,7 @@ export default function ExpectedVisitorScreen() {
                 )}
             </View>
             <View style={[styles.statusBadge, styles.pendingBadge]}>
-                <Text style={styles.statusText}>Pending</Text>
+                <Text style={styles.statusText}>Tap to Check In</Text>
             </View>
         </TouchableOpacity>
     );
@@ -133,38 +171,85 @@ export default function ExpectedVisitorScreen() {
                 <View style={{ width: 40 }} />
             </View>
 
+            {/* Tab Selector */}
+            <View style={styles.tabContainer}>
+                <TouchableOpacity
+                    style={[styles.tab, mode === 'otp' && styles.tabActive]}
+                    onPress={() => setMode('otp')}
+                >
+                    <Ionicons name="keypad" size={20} color={mode === 'otp' ? '#fff' : '#64748b'} />
+                    <Text style={[styles.tabText, mode === 'otp' && styles.tabTextActive]}>OTP</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, mode === 'qr' && styles.tabActive]}
+                    onPress={() => setMode('qr')}
+                >
+                    <Ionicons name="qr-code" size={20} color={mode === 'qr' ? '#fff' : '#64748b'} />
+                    <Text style={[styles.tabText, mode === 'qr' && styles.tabTextActive]}>Scan QR</Text>
+                </TouchableOpacity>
+            </View>
+
             <View style={styles.content}>
-                {/* OTP Input Section */}
-                <View style={styles.otpSection}>
-                    <Text style={styles.sectionTitle}>Verify by OTP</Text>
-                    <Text style={styles.sectionSubtitle}>Enter the 6-digit OTP from visitor</Text>
+                {mode === 'otp' ? (
+                    /* OTP Input Section */
+                    <View style={styles.otpSection}>
+                        <Text style={styles.sectionTitle}>Verify by OTP</Text>
+                        <Text style={styles.sectionSubtitle}>Enter the 6-digit OTP from visitor</Text>
 
-                    <TextInput
-                        style={styles.otpInput}
-                        placeholder="000000"
-                        value={otp}
-                        onChangeText={setOtp}
-                        keyboardType="number-pad"
-                        maxLength={6}
-                        editable={!isLoading}
-                    />
+                        <TextInput
+                            style={styles.otpInput}
+                            placeholder="000000"
+                            value={otp}
+                            onChangeText={setOtp}
+                            keyboardType="number-pad"
+                            maxLength={6}
+                            editable={!isLoading}
+                        />
 
-                    <TouchableOpacity
-                        style={[styles.verifyButton, isLoading && styles.buttonDisabled]}
-                        onPress={handleVerifyOTP}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator color="#fff" />
+                        <TouchableOpacity
+                            style={[styles.verifyButton, isLoading && styles.buttonDisabled]}
+                            onPress={handleVerifyOTP}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.buttonText}>Verify & Check In</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    /* QR Scanner Section */
+                    <View style={styles.qrSection}>
+                        {hasPermission === null ? (
+                            <Text style={styles.permissionText}>Requesting camera permission...</Text>
+                        ) : hasPermission === false ? (
+                            <View style={styles.permissionContainer}>
+                                <Ionicons name="camera-outline" size={48} color="#94a3b8" />
+                                <Text style={styles.permissionText}>Camera permission is required to scan QR codes</Text>
+                                <TouchableOpacity style={styles.retryButton} onPress={requestCameraPermission}>
+                                    <Text style={styles.retryButtonText}>Grant Permission</Text>
+                                </TouchableOpacity>
+                            </View>
                         ) : (
-                            <Text style={styles.buttonText}>Verify & Check In</Text>
+                            <View style={styles.scannerContainer}>
+                                <BarCodeScanner
+                                    onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+                                    style={styles.scanner}
+                                    barCodeTypes={[BarCodeScanner.Constants.BarCodeType.qr]}
+                                />
+                                <View style={styles.scannerOverlay}>
+                                    <View style={styles.scannerFrame} />
+                                </View>
+                                <Text style={styles.scannerHint}>Point camera at visitor's QR code</Text>
+                            </View>
                         )}
-                    </TouchableOpacity>
-                </View>
+                    </View>
+                )}
 
                 {/* Expected Visitors List */}
                 <View style={styles.listSection}>
-                    <Text style={styles.sectionTitle}>Today's Expected Visitors</Text>
+                    <Text style={styles.sectionTitle}>Today's Expected Visitors ({expectedVisitors.length})</Text>
 
                     {loadingVisitors ? (
                         <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 20 }} />
@@ -212,6 +297,34 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#1e293b',
     },
+    tabContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        gap: 12,
+    },
+    tab: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        paddingVertical: 12,
+        borderRadius: 12,
+        backgroundColor: '#f1f5f9',
+    },
+    tabActive: {
+        backgroundColor: '#10b981',
+    },
+    tabText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#64748b',
+    },
+    tabTextActive: {
+        color: '#fff',
+    },
     content: {
         flex: 1,
         padding: 20,
@@ -226,6 +339,15 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 4,
         elevation: 2,
+    },
+    qrSection: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 20,
+        marginBottom: 24,
+        minHeight: 280,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     sectionTitle: {
         fontSize: 18,
@@ -263,6 +385,56 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#fff',
         fontSize: 16,
+        fontWeight: '600',
+    },
+    scannerContainer: {
+        width: '100%',
+        height: 240,
+        borderRadius: 12,
+        overflow: 'hidden',
+        position: 'relative',
+    },
+    scanner: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    scannerOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    scannerFrame: {
+        width: 200,
+        height: 200,
+        borderWidth: 2,
+        borderColor: '#10b981',
+        borderRadius: 16,
+        backgroundColor: 'transparent',
+    },
+    scannerHint: {
+        textAlign: 'center',
+        color: '#64748b',
+        fontSize: 14,
+        marginTop: 12,
+    },
+    permissionContainer: {
+        alignItems: 'center',
+        padding: 20,
+    },
+    permissionText: {
+        color: '#64748b',
+        fontSize: 14,
+        textAlign: 'center',
+        marginTop: 12,
+    },
+    retryButton: {
+        marginTop: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        backgroundColor: '#3b82f6',
+        borderRadius: 8,
+    },
+    retryButtonText: {
+        color: '#fff',
         fontWeight: '600',
     },
     listSection: {
@@ -310,12 +482,12 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
     },
     pendingBadge: {
-        backgroundColor: '#fef3c7',
+        backgroundColor: '#10b981',
     },
     statusText: {
         fontSize: 12,
         fontWeight: '600',
-        color: '#92400e',
+        color: '#fff',
     },
     emptyState: {
         alignItems: 'center',

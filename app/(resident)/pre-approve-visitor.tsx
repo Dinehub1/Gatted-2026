@@ -24,6 +24,7 @@ export default function PreApproveVisitor() {
 
     const [visitorName, setVisitorName] = useState('');
     const [visitorPhone, setVisitorPhone] = useState('');
+    const [vehicleNumber, setVehicleNumber] = useState('');
     const [visitorType, setVisitorType] = useState<VisitorType>('guest');
     const [expectedDate, setExpectedDate] = useState<Date>(new Date());
     const [expectedTime, setExpectedTime] = useState<Date | null>(null);
@@ -67,6 +68,7 @@ export default function PreApproveVisitor() {
                 host_id: profile.id,
                 visitor_name: visitorName.trim(),
                 visitor_phone: visitorPhone.trim() || null,
+                vehicle_number: vehicleNumber.trim() || null,
                 visitor_type: visitorType,
                 expected_date: expectedDate.toISOString().split('T')[0],
                 expected_time: expectedTime ? expectedTime.toTimeString().slice(0, 5) : null,
@@ -104,6 +106,7 @@ export default function PreApproveVisitor() {
     const handleReset = () => {
         setVisitorName('');
         setVisitorPhone('');
+        setVehicleNumber('');
         setVisitorType('guest');
         setExpectedDate(new Date());
         setExpectedTime(null);
@@ -247,6 +250,16 @@ export default function PreApproveVisitor() {
                     value={visitorPhone}
                     onChangeText={setVisitorPhone}
                     keyboardType="phone-pad"
+                    editable={!isLoading}
+                />
+
+                <Text style={styles.label}>Vehicle Number (Optional)</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="e.g., MH 01 AB 1234"
+                    value={vehicleNumber}
+                    onChangeText={setVehicleNumber}
+                    autoCapitalize="characters"
                     editable={!isLoading}
                 />
 
