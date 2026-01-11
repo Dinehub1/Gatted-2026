@@ -95,7 +95,7 @@ export default function ResidentHome() {
             <PageHeader
                 greeting="Welcome Back"
                 title={profile?.full_name || 'Resident'}
-                subtitle={`Unit: ${currentRole?.unit_id || 'N/A'}`}
+                subtitle={`Unit: ${currentRole?.unit?.unit_number || 'N/A'}`}
                 rightAction={{
                     icon: 'person-circle-outline',
                     color: '#3b82f6',

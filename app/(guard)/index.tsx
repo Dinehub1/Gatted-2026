@@ -112,6 +112,15 @@ export default function GuardHome() {
                 />
 
                 <ActionButton
+                    icon="cube"
+                    iconSize={48}
+                    title="Parcels"
+                    subtitle="Log & track deliveries"
+                    variant="warning"
+                    onPress={() => router.push('/(guard)/parcels')}
+                />
+
+                <ActionButton
                     icon="alert-circle"
                     iconSize={48}
                     title="Emergency Alert"

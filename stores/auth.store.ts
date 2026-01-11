@@ -13,6 +13,10 @@ export interface UserRoleData {
         id: string;
         name: string;
     } | null;
+    unit?: {
+        id: string;
+        unit_number: string;
+    } | null;
 }
 
 export interface AuthState {
