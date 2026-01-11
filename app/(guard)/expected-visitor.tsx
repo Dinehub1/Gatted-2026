@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/auth-context';
 import { supabaseHelpers } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import { BarCodeScanner } from 'expo-barcode-scanner';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -16,23 +16,12 @@ export default function ExpectedVisitorScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [expectedVisitors, setExpectedVisitors] = useState<any[]>([]);
     const [loadingVisitors, setLoadingVisitors] = useState(true);
-    const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+    const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
 
     useEffect(() => {
         loadExpectedVisitors();
     }, []);
-
-    useEffect(() => {
-        if (mode === 'qr') {
-            requestCameraPermission();
-        }
-    }, [mode]);
-
-    const requestCameraPermission = async () => {
-        const { status } = await BarCodeScanner.requestPermissionsAsync();
-        setHasPermission(status === 'granted');
-    };
 
     const loadExpectedVisitors = async () => {
         if (!currentRole?.society_id) return;
@@ -90,7 +79,7 @@ export default function ExpectedVisitorScreen() {
         if (success) setOtp('');
     };
 
-    const handleBarCodeScanned = async ({ data }: { data: string }) => {
+    const handleBarcodeScanned = async ({ data }: { data: string }) => {
         if (scanned) return;
         setScanned(true);
 
@@ -221,22 +210,25 @@ export default function ExpectedVisitorScreen() {
                 ) : (
                     /* QR Scanner Section */
                     <View style={styles.qrSection}>
-                        {hasPermission === null ? (
+                        {!permission ? (
                             <Text style={styles.permissionText}>Requesting camera permission...</Text>
-                        ) : hasPermission === false ? (
+                        ) : !permission.granted ? (
                             <View style={styles.permissionContainer}>
                                 <Ionicons name="camera-outline" size={48} color="#94a3b8" />
                                 <Text style={styles.permissionText}>Camera permission is required to scan QR codes</Text>
-                                <TouchableOpacity style={styles.retryButton} onPress={requestCameraPermission}>
+                                <TouchableOpacity style={styles.retryButton} onPress={requestPermission}>
                                     <Text style={styles.retryButtonText}>Grant Permission</Text>
                                 </TouchableOpacity>
                             </View>
                         ) : (
                             <View style={styles.scannerContainer}>
-                                <BarCodeScanner
-                                    onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+                                <CameraView
                                     style={styles.scanner}
-                                    barCodeTypes={[BarCodeScanner.Constants.BarCodeType.qr]}
+                                    facing="back"
+                                    barcodeScannerSettings={{
+                                        barcodeTypes: ['qr'],
+                                    }}
+                                    onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
                                 />
                                 <View style={styles.scannerOverlay}>
                                     <View style={styles.scannerFrame} />

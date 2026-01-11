@@ -10,7 +10,7 @@ import {
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 type Stats = {
     visitorsToday: number;
@@ -64,20 +64,7 @@ export default function GuardHome() {
     };
 
     const handleEmergency = () => {
-        Alert.alert(
-            '🚨 Emergency Alert',
-            'This will notify all managers and admin immediately',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Send Alert',
-                    style: 'destructive',
-                    onPress: () => {
-                        Alert.alert('Alert Sent', 'Emergency notification has been sent to all managers');
-                    },
-                },
-            ]
-        );
+        router.push('/(guard)/panic');
     };
 
     if (isLoading) {
