@@ -1,28 +1,27 @@
-import { useAuthStore } from '@/stores/auth.store';
+import { AuthState, useAuthStore } from '@/stores/auth.store';
 import React, { createContext, useContext, useEffect } from 'react';
 
-type AuthStoreType = ReturnType<typeof useAuthStore>;
-
-const AuthContext = createContext<AuthStoreType | undefined>(undefined);
+const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const auth = useAuthStore();
+    // Get the entire store state and actions
+    const store = useAuthStore();
 
     useEffect(() => {
         // Initialize auth on mount
-        auth.initialize();
-    }, []);
+        store.initialize();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
-        <AuthContext.Provider value={auth}>
+        <AuthContext.Provider value={store}>
             {children}
         </AuthContext.Provider>
     );
 }
 
-export function useAuth(): AuthStoreType {
+export function useAuth(): AuthState {
     const context = useContext(AuthContext);
-    if (!context) {
+    if (context === null) {
         throw new Error('useAuth must be used within AuthProvider');
     }
     return context;

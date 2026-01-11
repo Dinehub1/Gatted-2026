@@ -96,6 +96,11 @@ export default function RaiseIssueScreen() {
             return;
         }
 
+        if (!profile || !currentRole) {
+            Alert.alert('Error', 'User profile or role not loaded');
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -130,15 +135,15 @@ export default function RaiseIssueScreen() {
 
             // Create issue record
             const issueData = {
-                society_id: currentRole?.society_id,
-                unit_id: currentRole?.unit_id,
-                reported_by: profile?.id,
+                society_id: currentRole.society_id,
+                unit_id: currentRole.unit_id,
+                reported_by: profile.id,
                 title: title.trim(),
                 description: description.trim(),
                 category,
                 priority,
                 status: 'open',
-                photo_url: photoUrl,
+                photos: photoUrl ? [photoUrl] : [],
             };
 
             const { error } = await supabase
@@ -150,12 +155,12 @@ export default function RaiseIssueScreen() {
             Alert.alert('Success!', 'Issue reported successfully', [
                 {
                     text: 'OK',
-                    onPress: () => router.back(),
+                    onPress: () => router.replace('/(resident)'),
                 },
             ]);
 
         } catch (error: any) {
-            console.error('Error creating issue:', error);
+            console.error('Error creating issue:', JSON.stringify(error, null, 2));
             Alert.alert('Error', error.message || 'Failed to report issue');
         } finally {
             setIsLoading(false);
