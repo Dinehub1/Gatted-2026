@@ -1,12 +1,12 @@
 import { supabase, supabaseHelpers } from '@/lib/supabase';
-import type { UserRole } from '@/types/database.types';
+import type { Profile, UserRoleType } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
-interface UserRoleData {
+export interface UserRoleData {
     id: string;
-    role: UserRole;
+    role: UserRoleType;
     society_id: string;
     unit_id: string | null;
     society?: {
@@ -15,10 +15,10 @@ interface UserRoleData {
     };
 }
 
-interface AuthState {
+export interface AuthState {
     user: User | null;
     session: Session | null;
-    profile: any | null;
+    profile: Profile | null;
     roles: UserRoleData[];
     currentRole: UserRoleData | null;
     isLoading: boolean;
@@ -31,7 +31,7 @@ interface AuthState {
     loadUserData: () => Promise<void>;
     setCurrentRole: (role: UserRoleData) => void;
     initialize: () => Promise<void>;
-    devLogin: (role: UserRole) => Promise<void>;
+    devLogin: (role: UserRoleType) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -149,8 +149,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     // Dev Login - Uses real Supabase email/password auth with test credentials
-    devLogin: async (role: UserRole) => {
-        const credentials: Record<UserRole, { email: string; password: string }> = {
+    devLogin: async (role: UserRoleType) => {
+        const credentials: Record<UserRoleType, { email: string; password: string }> = {
             guard: { email: 'guard@test.com', password: 'test1234' },
             resident: { email: 'resident@test.com', password: 'test1234' },
             manager: { email: 'manager@test.com', password: 'test1234' },

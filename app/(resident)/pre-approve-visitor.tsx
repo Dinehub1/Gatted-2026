@@ -1,3 +1,4 @@
+import { DateInput } from '@/components/shared/DateInput';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,8 +25,8 @@ export default function PreApproveVisitor() {
     const [visitorName, setVisitorName] = useState('');
     const [visitorPhone, setVisitorPhone] = useState('');
     const [visitorType, setVisitorType] = useState<VisitorType>('guest');
-    const [expectedDate, setExpectedDate] = useState(new Date().toISOString().split('T')[0]);
-    const [expectedTime, setExpectedTime] = useState('');
+    const [expectedDate, setExpectedDate] = useState<Date>(new Date());
+    const [expectedTime, setExpectedTime] = useState<Date | null>(null);
     const [purpose, setPurpose] = useState('');
 
     const [isLoading, setIsLoading] = useState(false);
@@ -43,8 +44,13 @@ export default function PreApproveVisitor() {
             return;
         }
 
-        if (visitorType !== 'delivery' && visitorType !== 'service' && !visitorPhone.trim()) {
+        if (!visitorPhone.trim()) {
             Alert.alert('Error', 'Please enter visitor phone number');
+            return;
+        }
+
+        if (!profile || !currentRole) {
+            Alert.alert('Error', 'User profile or role not loaded');
             return;
         }
 
@@ -56,14 +62,14 @@ export default function PreApproveVisitor() {
             otpExpiresAt.setHours(otpExpiresAt.getHours() + 24); // OTP valid for 24 hours
 
             const visitorRecord = {
-                society_id: currentRole?.society_id,
-                unit_id: currentRole?.unit_id,
-                host_id: profile?.id,
+                society_id: currentRole.society_id,
+                unit_id: currentRole.unit_id,
+                host_id: profile.id,
                 visitor_name: visitorName.trim(),
                 visitor_phone: visitorPhone.trim() || null,
                 visitor_type: visitorType,
-                expected_date: expectedDate,
-                expected_time: expectedTime || null,
+                expected_date: expectedDate.toISOString().split('T')[0],
+                expected_time: expectedTime ? expectedTime.toTimeString().slice(0, 5) : null,
                 purpose: purpose.trim() || null,
                 status: 'approved',
                 otp: otp,
@@ -88,8 +94,8 @@ export default function PreApproveVisitor() {
             );
 
         } catch (error: any) {
-            console.error('Error creating visitor:', error);
-            Alert.alert('Error', error.message || 'Failed to pre-approve visitor');
+            console.error('Error creating visitor:', error?.message || error);
+            Alert.alert('Error', error?.message || 'Failed to pre-approve visitor');
         } finally {
             setIsLoading(false);
         }
@@ -99,7 +105,8 @@ export default function PreApproveVisitor() {
         setVisitorName('');
         setVisitorPhone('');
         setVisitorType('guest');
-        setExpectedTime('');
+        setExpectedDate(new Date());
+        setExpectedTime(null);
         setPurpose('');
         setGeneratedOTP(null);
         setVisitorData(null);
@@ -164,7 +171,7 @@ export default function PreApproveVisitor() {
 
                         <Text style={styles.detailLabel}>Expected:</Text>
                         <Text style={styles.detailValue}>
-                            {expectedDate} {expectedTime && `at ${expectedTime}`}
+                            {expectedDate.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })} {expectedTime && `at ${expectedTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`}
                         </Text>
                     </View>
 
@@ -172,7 +179,7 @@ export default function PreApproveVisitor() {
                         <Text style={styles.doneButtonText}>Pre-approve Another Visitor</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.secondaryButton} onPress={() => router.back()}>
+                    <TouchableOpacity style={styles.secondaryButton} onPress={() => router.replace('/(resident)')}>
                         <Text style={styles.secondaryButtonText}>Back to Home</Text>
                     </TouchableOpacity>
                 </ScrollView>
@@ -233,7 +240,7 @@ export default function PreApproveVisitor() {
                     editable={!isLoading}
                 />
 
-                <Text style={styles.label}>Phone Number {visitorType !== 'delivery' && visitorType !== 'service' && '*'}</Text>
+                <Text style={styles.label}>Phone Number *</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="Enter phone number"
@@ -243,22 +250,21 @@ export default function PreApproveVisitor() {
                     editable={!isLoading}
                 />
 
-                <Text style={styles.label}>Expected Date *</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="YYYY-MM-DD"
+                <DateInput
+                    label="Expected Date"
                     value={expectedDate}
-                    onChangeText={setExpectedDate}
-                    editable={!isLoading}
+                    onChange={setExpectedDate}
+                    mode="date"
+                    minimumDate={new Date()}
+                    required
                 />
 
-                <Text style={styles.label}>Expected Time (Optional)</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="HH:MM (e.g., 14:30)"
-                    value={expectedTime}
-                    onChangeText={setExpectedTime}
-                    editable={!isLoading}
+                <DateInput
+                    label="Expected Time (Optional)"
+                    value={expectedTime || new Date()}
+                    onChange={setExpectedTime}
+                    mode="time"
+                    placeholder="Select time"
                 />
 
                 <Text style={styles.label}>Purpose (Optional)</Text>

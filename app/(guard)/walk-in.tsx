@@ -1,3 +1,4 @@
+import { UnitSelector } from '@/components/shared/UnitSelector';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +13,7 @@ export default function WalkInVisitorScreen() {
     const [formData, setFormData] = useState({
         visitorName: '',
         visitorPhone: '',
+        unitId: '',
         unitNumber: '',
         purpose: '',
     });
@@ -27,36 +29,41 @@ export default function WalkInVisitorScreen() {
             Alert.alert('Error', 'Please enter visitor name');
             return;
         }
-        if (!formData.unitNumber.trim()) {
-            Alert.alert('Error', 'Please enter unit number');
+        if (!formData.visitorPhone.trim() || formData.visitorPhone.length < 10) {
+            Alert.alert('Error', 'Please enter a valid 10-digit phone number');
+            return;
+        }
+        if (!formData.unitId) {
+            Alert.alert('Error', 'Please select a unit');
             return;
         }
 
         setIsSubmitting(true);
 
         try {
-            // Find unit by unit number
-            const { data: units, error: unitError } = await supabase
-                .from('units')
-                .select('id')
-                .eq('society_id', currentRole?.society_id)
-                .eq('unit_number', formData.unitNumber.trim())
-                .single();
+            // Find resident in the unit to assign as host
+            const { data: resident, error: residentError } = await supabase
+                .from('user_roles')
+                .select('user_id')
+                .eq('unit_id', formData.unitId)
+                .eq('role', 'resident')
+                .limit(1)
+                .maybeSingle();
 
-            if (unitError || !units) {
-                Alert.alert('Error', 'Unit not found. Please check the unit number.');
+            if (!resident) {
+                Alert.alert('Error', 'No resident found in this unit. Cannot register visitor.');
                 setIsSubmitting(false);
                 return;
             }
 
-            // Create visitor entry
             const { data: visitor, error: visitorError } = await supabase
                 .from('visitors')
                 .insert({
                     society_id: currentRole?.society_id,
-                    unit_id: units.id,
+                    unit_id: formData.unitId,
+                    host_id: resident.user_id,
                     visitor_name: formData.visitorName.trim(),
-                    visitor_phone: formData.visitorPhone.trim() || null,
+                    visitor_phone: formData.visitorPhone.trim(),
                     purpose: formData.purpose.trim() || null,
                     visitor_type: 'walk-in',
                     status: 'checked-in',
@@ -69,7 +76,7 @@ export default function WalkInVisitorScreen() {
             setIsSubmitting(false);
 
             if (visitorError) {
-                Alert.alert('Error', 'Failed to register visitor');
+                Alert.alert('Error', visitorError.message || 'Failed to register visitor');
                 return;
             }
 
@@ -83,6 +90,7 @@ export default function WalkInVisitorScreen() {
                             setFormData({
                                 visitorName: '',
                                 visitorPhone: '',
+                                unitId: '',
                                 unitNumber: '',
                                 purpose: '',
                             });
@@ -94,9 +102,9 @@ export default function WalkInVisitorScreen() {
                     },
                 ]
             );
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error registering visitor:', error);
-            Alert.alert('Error', 'Failed to register visitor');
+            Alert.alert('Error', error.message || 'Failed to register visitor');
             setIsSubmitting(false);
         }
     };
@@ -132,7 +140,7 @@ export default function WalkInVisitorScreen() {
 
                     {/* Phone Number */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Phone Number</Text>
+                        <Text style={styles.label}>Phone Number *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="10-digit mobile number"
@@ -144,18 +152,16 @@ export default function WalkInVisitorScreen() {
                         />
                     </View>
 
-                    {/* Unit Number */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Unit Number *</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="e.g., A-101"
-                            value={formData.unitNumber}
-                            onChangeText={(value) => handleInputChange('unitNumber', value)}
-                            editable={!isSubmitting}
-                            autoCapitalize="characters"
-                        />
-                    </View>
+                    {/* Unit Selection */}
+                    <UnitSelector
+                        label="Unit"
+                        societyId={currentRole?.society_id || ''}
+                        value={formData.unitId}
+                        onSelect={(unitId, unitNumber) => {
+                            setFormData(prev => ({ ...prev, unitId, unitNumber }));
+                        }}
+                        required
+                    />
 
                     {/* Purpose */}
                     <View style={styles.inputGroup}>
