@@ -1,3 +1,4 @@
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import {
     ActionButton,
     PageHeader,
@@ -7,12 +8,60 @@ import {
     StatRow,
 } from '@/components/shared';
 import { useAuth } from '@/contexts/auth-context';
-import React from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { supabase } from '@/lib/supabase';
+import React, { useEffect, useState } from 'react';
+import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+
+type Stats = {
+    visitorsToday: number;
+    currentlyInside: number;
+};
 
 export default function GuardHome() {
     const { signOut, profile, currentRole } = useAuth();
     const router = require('expo-router').useRouter();
+
+    const [stats, setStats] = useState<Stats>({ visitorsToday: 0, currentlyInside: 0 });
+    const [isLoading, setIsLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const loadStats = async () => {
+        try {
+            const societyId = currentRole?.society_id;
+            if (!societyId) return;
+
+            const today = new Date().toISOString().split('T')[0];
+
+            // Get today's visitors (expected for today or checked in today)
+            const { data: visitors } = await supabase
+                .from('visitors')
+                .select('id, status, expected_date, checked_in_at')
+                .eq('society_id', societyId);
+
+            const visitorsToday = visitors?.filter(v =>
+                v.expected_date === today ||
+                (v.checked_in_at && v.checked_in_at.startsWith(today))
+            ).length || 0;
+
+            const currentlyInside = visitors?.filter(v => v.status === 'checked-in').length || 0;
+
+            setStats({ visitorsToday, currentlyInside });
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        } finally {
+            setIsLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        loadStats();
+    }, [currentRole?.society_id]);
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        loadStats();
+    };
 
     const handleEmergency = () => {
         Alert.alert(
@@ -24,13 +73,16 @@ export default function GuardHome() {
                     text: 'Send Alert',
                     style: 'destructive',
                     onPress: () => {
-                        // TODO: Implement emergency alert
                         Alert.alert('Alert Sent', 'Emergency notification has been sent to all managers');
                     },
                 },
             ]
         );
     };
+
+    if (isLoading) {
+        return <LoadingSpinner />;
+    }
 
     return (
         <View style={styles.container}>
@@ -45,7 +97,13 @@ export default function GuardHome() {
                 }}
             />
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                style={styles.content}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" />
+                }
+            >
                 <SectionTitle>Quick Actions</SectionTitle>
 
                 <ActionButton
@@ -81,14 +139,14 @@ export default function GuardHome() {
                     <StatCard
                         icon="people-outline"
                         iconColor="#3b82f6"
-                        value={0}
+                        value={stats.visitorsToday}
                         label="Visitors Today"
                         backgroundColor="#dbeafe"
                     />
                     <StatCard
                         icon="log-in-outline"
                         iconColor="#10b981"
-                        value={0}
+                        value={stats.currentlyInside}
                         label="Currently Inside"
                         backgroundColor="#d1fae5"
                     />
