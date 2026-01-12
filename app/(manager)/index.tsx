@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 type VisitorStats = {
     total: number;
@@ -176,7 +176,7 @@ export default function ManagerHome() {
                     icon="business-outline"
                     title="Manage Units"
                     variant="primary"
-                    onPress={() => { }}
+                    onPress={() => Alert.alert('Coming Soon', 'Unit management will be available in a future update.')}
                 />
 
                 <SectionTitle>Recent Activity</SectionTitle>

@@ -1,3 +1,4 @@
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import {
     ActionButton,
     PageHeader,
@@ -6,11 +7,63 @@ import {
     StatRow,
 } from '@/components/shared';
 import { useAuth } from '@/contexts/auth-context';
-import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+
+type Stats = {
+    totalUsers: number;
+    totalSocieties: number;
+};
 
 export default function AdminHome() {
     const { signOut, profile } = useAuth();
+    const router = useRouter();
+    const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalSocieties: 0 });
+    const [isLoading, setIsLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const loadStats = async () => {
+        try {
+            // Get total users count
+            const { count: usersCount } = await supabase
+                .from('profiles')
+                .select('*', { count: 'exact', head: true });
+
+            // Get total societies count
+            const { count: societiesCount } = await supabase
+                .from('societies')
+                .select('*', { count: 'exact', head: true });
+
+            setStats({
+                totalUsers: usersCount || 0,
+                totalSocieties: societiesCount || 0,
+            });
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        } finally {
+            setIsLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        loadStats();
+    }, []);
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        loadStats();
+    };
+
+    const handleComingSoon = (feature: string) => {
+        Alert.alert('Coming Soon', `${feature} will be available in a future update.`);
+    };
+
+    if (isLoading) {
+        return <LoadingSpinner />;
+    }
 
     return (
         <View style={styles.container}>
@@ -25,21 +78,27 @@ export default function AdminHome() {
                 }}
             />
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                style={styles.content}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#8b5cf6" />
+                }
+            >
                 <SectionTitle>System Overview</SectionTitle>
 
                 <StatRow>
                     <StatCard
                         icon="people-outline"
                         iconColor="#8b5cf6"
-                        value={0}
+                        value={stats.totalUsers}
                         label="Total Users"
                         backgroundColor="#ede9fe"
                     />
                     <StatCard
                         icon="business-outline"
                         iconColor="#3b82f6"
-                        value={0}
+                        value={stats.totalSocieties}
                         label="Societies"
                         backgroundColor="#dbeafe"
                     />
@@ -52,7 +111,7 @@ export default function AdminHome() {
                     title="Manage Users"
                     subtitle="Add, edit, or deactivate users"
                     variant="primary"
-                    onPress={() => { }}
+                    onPress={() => router.push('/(admin)/manage-users')}
                 />
 
                 <ActionButton
@@ -60,7 +119,7 @@ export default function AdminHome() {
                     title="Manage Societies"
                     subtitle="Configure societies and settings"
                     variant="success"
-                    onPress={() => { }}
+                    onPress={() => router.push('/(admin)/manage-units')}
                 />
 
                 <ActionButton
@@ -68,7 +127,7 @@ export default function AdminHome() {
                     title="View Reports"
                     subtitle="Analytics and insights"
                     variant="info"
-                    onPress={() => { }}
+                    onPress={() => handleComingSoon('View Reports')}
                 />
 
                 <ActionButton
@@ -76,7 +135,7 @@ export default function AdminHome() {
                     title="System Settings"
                     subtitle="Configure app preferences"
                     backgroundColor="#64748b"
-                    onPress={() => { }}
+                    onPress={() => handleComingSoon('System Settings')}
                 />
 
                 <View style={styles.spacer} />

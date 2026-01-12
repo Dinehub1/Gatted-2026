@@ -162,6 +162,14 @@ export default function ResidentHome() {
                     onPress={() => router.push('/(resident)/raise-issue')}
                 />
 
+                <ActionButton
+                    icon="people-outline"
+                    title="Manage Family"
+                    subtitle="Add members to unit"
+                    variant="info"
+                    onPress={() => router.push('/(resident)/family')}
+                />
+
                 <SectionTitle>Recent Announcements</SectionTitle>
                 <Card>
                     <Text style={styles.emptyText}>No recent announcements</Text>

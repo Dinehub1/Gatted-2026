@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, TextStyle } from 'react-native';
 
 interface SectionTitleProps {
-    children: string;
+    children: React.ReactNode;
     style?: TextStyle;
 }
 

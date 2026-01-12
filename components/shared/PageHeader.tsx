@@ -6,6 +6,8 @@ interface PageHeaderProps {
     greeting?: string;
     title: string;
     subtitle?: string;
+    showBack?: boolean;
+    onBack?: () => void;
     rightAction?: {
         icon: keyof typeof Ionicons.glyphMap;
         color?: string;
@@ -13,9 +15,14 @@ interface PageHeaderProps {
     };
 }
 
-export function PageHeader({ greeting, title, subtitle, rightAction }: PageHeaderProps) {
+export function PageHeader({ greeting, title, subtitle, showBack, onBack, rightAction }: PageHeaderProps) {
     return (
         <View style={styles.header}>
+            {showBack && (
+                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color="#1e293b" />
+                </TouchableOpacity>
+            )}
             <View style={styles.headerLeft}>
                 {greeting && <Text style={styles.greeting}>{greeting}</Text>}
                 <Text style={styles.title}>{title}</Text>
@@ -48,6 +55,10 @@ const styles = StyleSheet.create({
     },
     headerLeft: {
         flex: 1,
+    },
+    backButton: {
+        marginRight: 12,
+        padding: 4,
     },
     greeting: {
         fontSize: 14,

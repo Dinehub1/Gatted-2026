@@ -64,7 +64,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(resident)" />
         <Stack.Screen name="(manager)" />
         <Stack.Screen name="(admin)" />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
