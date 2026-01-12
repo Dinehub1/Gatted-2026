@@ -1,5 +1,6 @@
 import { supabase, supabaseHelpers } from '@/lib/supabase';
 import type { Profile, UserRoleType } from '@/types';
+import { handleApiError, logError } from '@/utils/error-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session, Subscription, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
@@ -56,14 +57,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const { error } = await supabaseHelpers.signInWithOTP(phone);
 
             if (error) {
-                console.error('OTP sign in error:', error);
-                return { error };
+                logError(error, 'OTP sign in failed', { severity: 'medium' });
+                return { error: handleApiError(error) };
             }
 
             return { error: null };
         } catch (error) {
-            console.error('OTP sign in error:', error);
-            return { error };
+            logError(error, 'OTP sign in exception', { severity: 'high' });
+            return { error: handleApiError(error) };
         }
     },
 
@@ -72,8 +73,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const { data, error } = await supabaseHelpers.verifyOTP(phone, token);
 
             if (error) {
-                console.error('OTP verification error:', error);
-                return { error };
+                logError(error, 'OTP verification failed', { severity: 'medium' });
+                return { error: handleApiError(error) };
             }
 
             if (data.session && data.user) {
@@ -89,8 +90,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             return { error: null };
         } catch (error) {
-            console.error('OTP verification error:', error);
-            return { error };
+            logError(error, 'OTP verification exception', { severity: 'high' });
+            return { error: handleApiError(error) };
         }
     },
 
@@ -108,7 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 isAuthenticated: false,
             });
         } catch (error) {
-            console.error('Sign out error:', error);
+            logError(error, 'Sign out failed', { severity: 'low' });
         }
     },
 
@@ -121,7 +122,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const { data: profile, error: profileError } = await supabaseHelpers.getProfile(user.id);
 
             if (profileError) {
-                console.error('Error loading profile:', profileError);
+                logError(profileError, 'Failed to load user profile', { severity: 'medium' });
                 return;
             }
 
@@ -129,7 +130,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const { data: roles, error: rolesError } = await supabaseHelpers.getUserRoles(user.id);
 
             if (rolesError) {
-                console.error('Error loading roles:', rolesError);
+                logError(rolesError, 'Failed to load user roles', { severity: 'medium' });
                 return;
             }
 
@@ -147,7 +148,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 }
             }
         } catch (error) {
-            console.error('Error loading user data:', error);
+            logError(error, 'Failed to load user data', { severity: 'high' });
         }
     },
 
@@ -180,7 +181,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             });
 
             if (error) {
-                console.error('Dev login error:', error);
+                logError(error, 'Dev login failed', { severity: 'low', context: { role } });
                 return;
             }
 
@@ -195,7 +196,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 await get().loadUserData();
             }
         } catch (error) {
-            console.error('Dev login error:', error);
+            logError(error, 'Dev login exception', { severity: 'medium', context: { role } });
         }
     },
 
@@ -254,7 +255,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             set({ isLoading: false });
         } catch (error) {
-            console.error('Auth initialization error:', error);
+            logError(error, 'Auth initialization failed', { severity: 'critical' });
             set({ isLoading: false });
         }
     },

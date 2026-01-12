@@ -116,26 +116,35 @@ export const supabaseHelpers = {
         return await query.order('expected_time', { ascending: true, nullsFirst: false });
     },
 
-    async logVisitorEntry(visitorId: string, guardId: string) {
-        return await supabase
-            .from('visitors')
-            .update({
-                status: 'checked-in',
-                checked_in_at: new Date().toISOString(),
-                checked_in_by: guardId,
-            })
-            .eq('id', visitorId);
+    async logVisitorEntry(visitorId: string, guardId: string, otp?: string) {
+        // Use the database function for check-in which includes validation
+        const { data, error } = await supabase.rpc('checkin_visitor', {
+            visitor_uuid: visitorId,
+            guard_uuid: guardId,
+            otp_code: otp,
+        });
+
+        if (error) {
+            console.error('Check-in error:', error);
+            return { data: null, error };
+        }
+
+        return { data, error: null };
     },
 
     async logVisitorExit(visitorId: string, guardId: string) {
-        return await supabase
-            .from('visitors')
-            .update({
-                status: 'checked-out',
-                checked_out_at: new Date().toISOString(),
-                checked_out_by: guardId,
-            })
-            .eq('id', visitorId);
+        // Use the database function for check-out which includes validation
+        const { data, error } = await supabase.rpc('checkout_visitor', {
+            visitor_uuid: visitorId,
+            guard_uuid: guardId,
+        });
+
+        if (error) {
+            console.error('Check-out error:', error);
+            return { data: null, error };
+        }
+
+        return { data, error: null };
     },
 
     // Issue helpers
