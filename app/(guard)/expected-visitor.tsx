@@ -36,13 +36,15 @@ export default function ExpectedVisitorScreen() {
         setLoadingVisitors(false);
     };
 
-    const checkInVisitor = async (visitorId: string, visitorName: string) => {
+    const checkInVisitor = async (visitorId: string, visitorName: string, otp?: string) => {
         setIsLoading(true);
-        const { error } = await supabaseHelpers.logVisitorEntry(visitorId, profile?.id ?? '');
+        const { error } = await supabaseHelpers.logVisitorEntry(visitorId, profile?.id ?? '', otp);
         setIsLoading(false);
 
         if (error) {
-            Alert.alert('Error', 'Failed to check in visitor');
+            console.error('Check-in error details:', error);
+            const errorMessage = error.message || 'Failed to check in visitor';
+            Alert.alert('Check-in Failed', errorMessage);
             return false;
         }
 
@@ -75,7 +77,7 @@ export default function ExpectedVisitorScreen() {
             return;
         }
 
-        const success = await checkInVisitor(visitor.id, visitor.visitor_name);
+        const success = await checkInVisitor(visitor.id, visitor.visitor_name, otp);
         if (success) setOtp('');
     };
 
@@ -110,7 +112,7 @@ export default function ExpectedVisitorScreen() {
                 return;
             }
 
-            await checkInVisitor(visitor.id, visitorName || visitor.visitor_name);
+            await checkInVisitor(visitor.id, visitorName || visitor.visitor_name, qrOtp);
             setScanned(false);
         } catch (e) {
             Alert.alert('Error', 'Could not read QR code', [
