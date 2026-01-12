@@ -104,6 +104,15 @@ export default function GuardHome() {
                 />
 
                 <ActionButton
+                    icon="log-out-outline"
+                    iconSize={48}
+                    title="Checkout Visitor"
+                    subtitle="Mark visitor exit"
+                    variant="info"
+                    onPress={() => router.push('/(guard)/checkout')}
+                />
+
+                <ActionButton
                     icon="person-add"
                     iconSize={48}
                     title="Walk-in Visitor"
@@ -152,7 +161,7 @@ export default function GuardHome() {
                 <SecondaryAction
                     icon="time-outline"
                     label="View Visitor History"
-                    onPress={() => { }}
+                    onPress={() => router.push('/(guard)/checkout')}
                 />
 
                 <View style={styles.spacer} />
