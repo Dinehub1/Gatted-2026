@@ -29,8 +29,11 @@ export default function WalkInVisitorScreen() {
             Alert.alert('Error', 'Please enter visitor name');
             return;
         }
-        if (!formData.visitorPhone.trim() || formData.visitorPhone.length < 10) {
-            Alert.alert('Error', 'Please enter a valid 10-digit phone number');
+
+        // Indian mobile number validation (10 digits starting with 6-9)
+        const phoneRegex = /^[6-9]\d{9}$/;
+        if (!formData.visitorPhone.trim() || !phoneRegex.test(formData.visitorPhone.trim())) {
+            Alert.alert('Error', 'Please enter a valid 10-digit Indian mobile number');
             return;
         }
         if (!formData.unitId) {

@@ -129,40 +129,42 @@ export default function LoginScreen() {
                 )}
             </View>
 
-            {/* Developer Login Shortcuts */}
-            <View style={styles.devSection}>
-                <Text style={styles.devTitle}>Developer Access</Text>
-                <View style={styles.devButtons}>
-                    <TouchableOpacity
-                        style={[styles.devButton, { backgroundColor: '#10b981' }]}
-                        onPress={() => useAuthStore.getState().devLogin('guard')}
-                    >
-                        <Text style={styles.devButtonText}>Guard</Text>
-                    </TouchableOpacity>
+            {/* Developer Login Shortcuts - Only visible in development */}
+            {__DEV__ && (
+                <View style={styles.devSection}>
+                    <Text style={styles.devTitle}>Developer Access</Text>
+                    <View style={styles.devButtons}>
+                        <TouchableOpacity
+                            style={[styles.devButton, { backgroundColor: '#10b981' }]}
+                            onPress={() => useAuthStore.getState().devLogin('guard')}
+                        >
+                            <Text style={styles.devButtonText}>Guard</Text>
+                        </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[styles.devButton, { backgroundColor: '#3b82f6' }]}
-                        onPress={() => useAuthStore.getState().devLogin('resident')}
-                    >
-                        <Text style={styles.devButtonText}>Resident</Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.devButton, { backgroundColor: '#3b82f6' }]}
+                            onPress={() => useAuthStore.getState().devLogin('resident')}
+                        >
+                            <Text style={styles.devButtonText}>Resident</Text>
+                        </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[styles.devButton, { backgroundColor: '#8b5cf6' }]}
-                        onPress={() => useAuthStore.getState().devLogin('manager')}
-                    >
-                        <Text style={styles.devButtonText}>Manager</Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.devButton, { backgroundColor: '#8b5cf6' }]}
+                            onPress={() => useAuthStore.getState().devLogin('manager')}
+                        >
+                            <Text style={styles.devButtonText}>Manager</Text>
+                        </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[styles.devButton, { backgroundColor: '#f59e0b' }]}
-                        onPress={() => useAuthStore.getState().devLogin('admin')}
-                    >
-                        <Text style={styles.devButtonText}>Admin</Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.devButton, { backgroundColor: '#f59e0b' }]}
+                            onPress={() => useAuthStore.getState().devLogin('admin')}
+                        >
+                            <Text style={styles.devButtonText}>Admin</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <Text style={styles.devNote}>Uses test credentials (email/password)</Text>
                 </View>
-                <Text style={styles.devNote}>Uses test credentials (email/password)</Text>
-            </View>
+            )}
         </View>
     );
 }
