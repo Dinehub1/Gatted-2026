@@ -102,6 +102,7 @@ export default function FamilyManagement() {
                 .insert({
                     user_id: users.id,
                     role: 'resident',
+                    society_id: currentRole.society_id, // Required for RLS policies
                     unit_id: currentRole.unit_id,
                     is_active: true
                 });

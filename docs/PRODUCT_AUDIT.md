@@ -749,10 +749,12 @@ supabase.from('issues').insert({
 
 | Issue | Location | Risk | Status |
 |-------|----------|------|--------|
-| **Dev login buttons** | `login.tsx` | High | ⚠️ Still present - REMOVE before production |
+| ~~Dev login buttons~~ | `login.tsx` | ~~High~~ | ✅ **FIXED (Jan 14)** - Wrapped in `__DEV__` check |
 | ~~Missing society_id on role insert~~ | `manage-users.tsx` | ~~High~~ | ✅ **FIXED** - Society selector added |
 | ~~Direct update bypasses RPC~~ | `checkout.tsx` | ~~Medium~~ | ✅ **FIXED** - Now uses `checkout_visitor` RPC |
-| **Client-side OTP generation** | `pre-approve-visitor.tsx` | Low | ⚠️ Server trigger handles this |
+| ~~Client-side OTP generation~~ | `pre-approve-visitor.tsx` | ~~Low~~ | ✅ **FIXED (Jan 14)** - Now uses server-generated OTP |
+| ~~Missing phone validation~~ | `walk-in.tsx`, `pre-approve-visitor.tsx` | ~~Medium~~ | ✅ **FIXED (Jan 14)** - Indian mobile regex added |
+| ~~Missing society_id on family add~~ | `family.tsx` | ~~Medium~~ | ✅ **FIXED (Jan 14)** - society_id added to insert |
 
 ### 🟡 Backend Routes Without UI
 
