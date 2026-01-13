@@ -8,6 +8,7 @@ import {
     Alert,
     FlatList,
     Modal,
+    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -21,30 +22,52 @@ type UserProfile = {
     email: string | null;
     phone: string | null;
     role?: string;
-    user_roles?: { role: string }[];
+    society_id?: string;
+    society_name?: string;
+    user_roles?: { role: string; society_id: string; society?: { name: string } }[];
+};
+
+type Society = {
+    id: string;
+    name: string;
 };
 
 export default function ManageUsers() {
     const router = useRouter();
     const [users, setUsers] = useState<UserProfile[]>([]);
+    const [societies, setSocieties] = useState<Society[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [selectedSociety, setSelectedSociety] = useState<string>('');
+    const [updating, setUpdating] = useState(false);
 
     useEffect(() => {
         fetchUsers();
+        fetchSocieties();
     }, []);
+
+    const fetchSocieties = async () => {
+        const { data, error } = await supabase
+            .from('societies')
+            .select('id, name')
+            .order('name');
+
+        if (!error && data) {
+            setSocieties(data);
+        }
+    };
 
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            // Fetch profiles and their roles
+            // Fetch profiles and their roles with society info
             const { data: profiles, error: profilesError } = await supabase
                 .from('profiles')
                 .select(`
                     *,
-                    user_roles!user_roles_user_id_fkey (role)
+                    user_roles!user_roles_user_id_fkey (role, society_id, society:societies(name))
                 `);
 
             if (profilesError) throw profilesError;
@@ -52,7 +75,9 @@ export default function ManageUsers() {
             // Flatten structure for easier display
             const formattedUsers = profiles.map((p: any) => ({
                 ...p,
-                role: p.user_roles?.[0]?.role || 'N/A'
+                role: p.user_roles?.[0]?.role || 'N/A',
+                society_id: p.user_roles?.[0]?.society_id || null,
+                society_name: p.user_roles?.[0]?.society?.name || 'No Society'
             }));
 
             setUsers(formattedUsers);
@@ -64,30 +89,62 @@ export default function ManageUsers() {
         }
     };
 
+    const openModal = (user: UserProfile) => {
+        setSelectedUser(user);
+        // Pre-select user's current society if they have one
+        setSelectedSociety(user.society_id || (societies[0]?.id || ''));
+        setModalVisible(true);
+    };
+
     const handleRoleUpdate = async (userId: string, newRole: string) => {
+        // Confirmation dialog
+        Alert.alert(
+            'Confirm Role Change',
+            `Change ${selectedUser?.full_name || 'this user'}'s role to ${newRole.toUpperCase()}?${newRole === 'admin' ? '\n\n⚠️ Admin role has full system access!' : ''}`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Confirm',
+                    onPress: () => performRoleUpdate(userId, newRole)
+                }
+            ]
+        );
+    };
+
+    const performRoleUpdate = async (userId: string, newRole: string) => {
+        if (!selectedSociety && newRole !== 'admin') {
+            Alert.alert('Error', 'Please select a society for this user');
+            return;
+        }
+
+        setUpdating(true);
         try {
-            // First check if role entry exists
+            // First check if role entry exists for this user
             const { data: existingRole } = await supabase
                 .from('user_roles')
-                .select('id')
+                .select('id, society_id')
                 .eq('user_id', userId)
                 .single();
 
             let error;
             if (existingRole) {
-                // Update existing
+                // Update existing role
                 const { error: updateError } = await supabase
                     .from('user_roles')
-                    .update({ role: newRole as any })
+                    .update({
+                        role: newRole as any,
+                        society_id: selectedSociety || existingRole.society_id
+                    })
                     .eq('user_id', userId);
                 error = updateError;
             } else {
-                // Insert new
+                // Insert new role WITH society_id (FIXED)
                 const { error: insertError } = await supabase
                     .from('user_roles')
                     .insert({
                         user_id: userId,
                         role: newRole as any,
+                        society_id: selectedSociety, // ✅ NOW REQUIRED
                         is_active: true
                     });
                 error = insertError;
@@ -98,9 +155,11 @@ export default function ManageUsers() {
             Alert.alert('Success', 'User role updated successfully');
             setModalVisible(false);
             fetchUsers();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error updating role:', error);
-            Alert.alert('Error', 'Failed to update user role');
+            Alert.alert('Error', error.message || 'Failed to update user role');
+        } finally {
+            setUpdating(false);
         }
     };
 
@@ -113,10 +172,7 @@ export default function ManageUsers() {
     const renderUserItem = ({ item }: { item: UserProfile }) => (
         <TouchableOpacity
             style={styles.userCard}
-            onPress={() => {
-                setSelectedUser(item);
-                setModalVisible(true);
-            }}
+            onPress={() => openModal(item)}
         >
             <View style={styles.avatarContainer}>
                 <Text style={styles.avatarText}>
@@ -125,8 +181,11 @@ export default function ManageUsers() {
             </View>
             <View style={styles.userInfo}>
                 <Text style={styles.userName}>{item.full_name || 'Unknown User'}</Text>
-                <Text style={styles.userEmail}>{item.email}</Text>
-                <Text style={styles.userRole}>Current Role: {item.role?.toUpperCase()}</Text>
+                <Text style={styles.userEmail}>{item.email || item.phone}</Text>
+                <View style={styles.roleRow}>
+                    <Text style={styles.userRole}>{item.role?.toUpperCase()}</Text>
+                    <Text style={styles.societyName}> • {item.society_name}</Text>
+                </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
         </TouchableOpacity>
@@ -185,9 +244,33 @@ export default function ManageUsers() {
                             </TouchableOpacity>
                         </View>
                         <Text style={styles.modalSubtitle}>
-                            Select a new role for {selectedUser?.full_name}
+                            {selectedUser?.full_name || 'User'}
                         </Text>
 
+                        {/* Society Selector */}
+                        <Text style={styles.sectionLabel}>Assign to Society:</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.societyScroll}>
+                            {societies.map((society) => (
+                                <TouchableOpacity
+                                    key={society.id}
+                                    style={[
+                                        styles.societyChip,
+                                        selectedSociety === society.id && styles.societyChipSelected
+                                    ]}
+                                    onPress={() => setSelectedSociety(society.id)}
+                                >
+                                    <Text style={[
+                                        styles.societyChipText,
+                                        selectedSociety === society.id && styles.societyChipTextSelected
+                                    ]}>
+                                        {society.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        {/* Role Options */}
+                        <Text style={styles.sectionLabel}>Select Role:</Text>
                         {['resident', 'guard', 'manager', 'admin'].map((role) => (
                             <TouchableOpacity
                                 key={role}
@@ -196,16 +279,27 @@ export default function ManageUsers() {
                                     selectedUser?.role === role && styles.roleOptionSelected
                                 ]}
                                 onPress={() => handleRoleUpdate(selectedUser!.id, role)}
+                                disabled={updating}
                             >
-                                <Text style={[
-                                    styles.roleOptionText,
-                                    selectedUser?.role === role && styles.roleOptionTextSelected
-                                ]}>
-                                    {role.charAt(0).toUpperCase() + role.slice(1)}
-                                </Text>
-                                {selectedUser?.role === role && (
+                                <View style={styles.roleInfo}>
+                                    <Text style={[
+                                        styles.roleOptionText,
+                                        selectedUser?.role === role && styles.roleOptionTextSelected
+                                    ]}>
+                                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                                    </Text>
+                                    <Text style={styles.roleDescription}>
+                                        {role === 'admin' && 'Full system access'}
+                                        {role === 'manager' && 'Society management'}
+                                        {role === 'guard' && 'Gate operations'}
+                                        {role === 'resident' && 'Unit access only'}
+                                    </Text>
+                                </View>
+                                {updating ? (
+                                    <ActivityIndicator size="small" color="#2563eb" />
+                                ) : selectedUser?.role === role ? (
                                     <Ionicons name="checkmark" size={20} color="#2563eb" />
-                                )}
+                                ) : null}
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -289,6 +383,15 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         color: '#3b82f6',
     },
+    roleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 2,
+    },
+    societyName: {
+        fontSize: 12,
+        color: '#94a3b8',
+    },
     emptyText: {
         textAlign: 'center',
         color: '#64748b',
@@ -311,7 +414,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 8,
     },
     modalTitle: {
         fontSize: 20,
@@ -319,9 +422,42 @@ const styles = StyleSheet.create({
         color: '#1e293b',
     },
     modalSubtitle: {
+        fontSize: 16,
+        color: '#1e293b',
+        marginBottom: 16,
+        fontWeight: '600',
+    },
+    sectionLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#64748b',
+        textTransform: 'uppercase',
+        marginBottom: 8,
+        marginTop: 8,
+    },
+    societyScroll: {
+        marginBottom: 16,
+    },
+    societyChip: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#f1f5f9',
+        marginRight: 8,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    societyChipSelected: {
+        backgroundColor: '#eff6ff',
+        borderColor: '#2563eb',
+    },
+    societyChipText: {
         fontSize: 14,
         color: '#64748b',
-        marginBottom: 24,
+    },
+    societyChipTextSelected: {
+        color: '#2563eb',
+        fontWeight: '600',
     },
     roleOption: {
         flexDirection: 'row',
@@ -337,6 +473,9 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#2563eb',
     },
+    roleInfo: {
+        flex: 1,
+    },
     roleOptionText: {
         fontSize: 16,
         fontWeight: '500',
@@ -345,5 +484,10 @@ const styles = StyleSheet.create({
     roleOptionTextSelected: {
         color: '#2563eb',
         fontWeight: '600',
+    },
+    roleDescription: {
+        fontSize: 12,
+        color: '#94a3b8',
+        marginTop: 2,
     },
 });

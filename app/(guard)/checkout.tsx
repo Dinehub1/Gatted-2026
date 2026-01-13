@@ -91,22 +91,19 @@ export default function VisitorCheckout() {
     const performCheckout = async (visitorId: string) => {
         setCheckingOut(visitorId);
         try {
-            const { error } = await supabase
-                .from('visitors')
-                .update({
-                    status: 'checked-out',
-                    checked_out_at: new Date().toISOString(),
-                    checked_out_by: profile?.id
-                })
-                .eq('id', visitorId);
+            // Use RPC function for proper validation and audit trail
+            const { data, error } = await supabase.rpc('checkout_visitor', {
+                visitor_uuid: visitorId,
+                guard_uuid: profile!.id
+            });
 
             if (error) throw error;
 
             Alert.alert('Success', 'Visitor checked out successfully');
             fetchActiveVisitors();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Checkout error:', error);
-            Alert.alert('Error', 'Failed to check out visitor');
+            Alert.alert('Error', error.message || 'Failed to check out visitor');
         } finally {
             setCheckingOut(null);
         }

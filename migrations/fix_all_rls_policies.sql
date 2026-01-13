@@ -8,7 +8,7 @@
 -- NOTIFICATIONS TABLE - CRITICAL FIX
 -- =====================================================
 
--- Enable RLS on notifications table
+-- Enable RLS on notifications table 
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 -- Drop ANY possible existing policies (handles partial migrations)
