@@ -98,10 +98,15 @@ export default function ManagerHome() {
                 greeting="Manager Dashboard"
                 title={profile?.full_name || 'Manager'}
                 subtitle={currentRole?.society?.name || 'Society'}
+                secondaryRightAction={{
+                    icon: 'notifications-outline',
+                    color: '#64748b',
+                    onPress: () => router.push('/(manager)/notifications'),
+                }}
                 rightAction={{
-                    icon: 'log-out-outline',
-                    color: '#ef4444',
-                    onPress: signOut,
+                    icon: 'person-circle-outline',
+                    color: '#3b82f6',
+                    onPress: () => router.push('/(manager)/profile'),
                 }}
             />
 
@@ -152,10 +157,10 @@ export default function ManagerHome() {
 
                 <ActionButton
                     icon="megaphone"
-                    title="Create Announcement"
+                    title="Manage Announcements"
                     variant="info"
                     backgroundColor="#8b5cf6"
-                    onPress={handleCreateAnnouncement}
+                    onPress={() => router.push('/(manager)/announcements')}
                 />
 
                 <ActionButton

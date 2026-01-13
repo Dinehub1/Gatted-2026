@@ -56,7 +56,7 @@ export default function ParcelsScreen() {
                 .from('parcels')
                 .select('*')
                 .eq('society_id', currentRole.society_id)
-                .eq('status', 'received')
+                .in('status', ['received', 'notified'])
                 .order('received_at', { ascending: false });
 
             if (error) {
@@ -119,14 +119,19 @@ export default function ParcelsScreen() {
         setIsSubmitting(true);
 
         try {
-            // Find resident for this unit
-            const { data: userRole } = await supabase
+            // Find resident for this unit (get primary or first active resident)
+            const { data: userRole, error: residentError } = await supabase
                 .from('user_roles')
                 .select('user_id')
                 .eq('unit_id', selectedUnitId)
                 .eq('role', 'resident')
                 .eq('is_active', true)
-                .single();
+                .limit(1)
+                .maybeSingle();
+
+            if (residentError) {
+                console.log('Note: No resident found for unit:', residentError);
+            }
 
             // Insert parcel
             const { error } = await supabase
@@ -139,6 +144,7 @@ export default function ParcelsScreen() {
                     tracking_number: trackingNumber.trim() || null,
                     description: description.trim() || null,
                     received_by: profile?.id,
+                    received_at: new Date().toISOString(),
                     status: 'received',
                 });
 
@@ -193,10 +199,7 @@ export default function ParcelsScreen() {
     };
 
     const renderParcel = ({ item }: { item: Parcel }) => (
-        <TouchableOpacity
-            style={styles.parcelCard}
-            onPress={() => handleMarkCollected(item.id, item.unit?.unit_number || 'Unknown')}
-        >
+        <View style={styles.parcelCard}>
             <View style={styles.parcelIcon}>
                 <Ionicons name="cube" size={24} color="#f59e0b" />
             </View>
@@ -212,10 +215,14 @@ export default function ParcelsScreen() {
                     {item.received_at ? new Date(item.received_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                 </Text>
             </View>
-            <View style={styles.collectButton}>
-                <Ionicons name="checkmark-circle" size={32} color="#10b981" />
-            </View>
-        </TouchableOpacity>
+            <TouchableOpacity
+                style={styles.collectButton}
+                onPress={() => handleMarkCollected(item.id, item.unit?.unit_number || 'Unknown')}
+            >
+                <Ionicons name="checkmark-circle-outline" size={20} color="#10b981" />
+                <Text style={styles.collectButtonText}>Mark Collected</Text>
+            </TouchableOpacity>
+        </View>
     );
 
     return (
@@ -421,7 +428,18 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     collectButton: {
-        padding: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#d1fae5',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+    },
+    collectButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#10b981',
     },
     emptyState: {
         alignItems: 'center',

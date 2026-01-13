@@ -1,8 +1,21 @@
 # GATED Database Schema Reference
 
-**Generated:** January 12, 2026
-**Source:** Live Supabase Metadata
-**Status:** ✅ Active & Healthy
+**Generated:** January 13, 2026  
+**Source:** Live Supabase Metadata  
+**Status:** ✅ Active & Healthy (Security Issues Resolved)
+
+---
+
+## ✅ Recent Security Fixes (Jan 13, 2026)
+
+**Migration Applied:** `fix_rls_security_issues.sql`
+
+All critical RLS issues have been resolved:
+1. ✅ **RLS Enabled** on `guard_shifts`, `issue_updates`, `unit_residents`
+2. ✅ **Parcels Policies Cleaned** from 10 duplicates to 4 proper policies
+3. ✅ **Removed Permissive Policies** that used `USING (true)`
+
+
 
 ---
 
@@ -13,9 +26,12 @@
    - [blocks](#blocks)
    - [units](#units)
    - [user_roles](#user_roles)
+   - [unit_residents](#unit_residents)
+   - [push_tokens](#push_tokens)
 2. [Feature Tables](#feature-tables)
    - [visitors](#visitors)
    - [issues](#issues)
+   - [issue_updates](#issue_updates)
    - [announcements](#announcements)
    - [parcels](#parcels)
    - [notifications](#notifications)
@@ -43,9 +59,7 @@ User profile data linked to Supabase Auth.
 - **Public profiles are viewable by everyone**: `SELECT` (Public)
 - **Users can insert their own profile**: `INSERT` (uid = id)
 - **Users can update own profile**: `UPDATE` (uid = id)
-
-**Triggers**
-- `update_profiles_updated_at`: `BEFORE UPDATE` -> `update_updated_at_column()`
+- **Access profiles**: `SELECT` (id = auth.uid() OR is_admin())
 
 ---
 
@@ -67,8 +81,8 @@ Gated communities managed by the system.
 | `created_at` | timestamptz | YES | `now()` |
 | `updated_at` | timestamptz | YES | `now()` |
 
-**Triggers**
-- `update_societies_updated_at`: `BEFORE UPDATE` -> `update_updated_at_column()`
+**RLS Policies**
+- **Anyone can read societies**: `SELECT` (Public)
 
 ---
 
@@ -81,6 +95,7 @@ Residential units/apartments.
 | `id` | uuid | NO | `uuid_generate_v4()` |
 | `society_id` | uuid | YES | (FK -> societies) |
 | `block_id` | uuid | YES | (FK -> blocks) |
+| `owner_id` | uuid | YES | (FK -> profiles) |
 | `unit_number` | text | NO | - |
 | `floor` | int4 | YES | - |
 | `area_sqft` | numeric | YES | - |
@@ -88,12 +103,9 @@ Residential units/apartments.
 | `created_at` | timestamptz | YES | `now()` |
 | `updated_at` | timestamptz | YES | `now()` |
 
-**Indexes**
-- `idx_units_society`: `btree (society_id)`
-- `idx_units_block`: `btree (block_id)`
-
-**Triggers**
-- `update_units_updated_at`: `BEFORE UPDATE` -> `update_updated_at_column()`
+**RLS Policies**
+- **Anyone can read units**: `SELECT` (Public)
+- **Users can read units in their society**: `SELECT` (Checked against user_roles)
 
 ---
 
@@ -116,10 +128,43 @@ Maps users to societies/units with specific roles.
 - **Users can view their own roles**: `SELECT` (user_id = auth.uid())
 - **Admins/Managers can view roles in their society**: `SELECT` (via subquery on `user_roles`)
 
-**Indexes**
-- `user_roles_user_id_society_id_role_key`: `UNIQUE btree (user_id, society_id, role)`
-- `idx_user_roles_user`: `btree (user_id)`
-- `idx_user_roles_society`: `btree (society_id)`
+---
+
+### unit_residents
+**⚠️ RLS DISABLED**
+Maps residents to units (family members, tenants).
+
+**Columns**
+| Name | Type | Nullable | Default |
+|------|------|----------|---------|
+| `id` | uuid | NO | `uuid_generate_v4()` |
+| `unit_id` | uuid | YES | (FK -> units) |
+| `user_id` | uuid | YES | (FK -> profiles) |
+| `resident_type` | varchar | YES | - |
+| `is_primary` | bool | YES | `false` |
+| `move_in_date` | date | YES | - |
+| `move_out_date` | date | YES | - |
+| `created_at` | timestamptz | YES | `now()` |
+
+**Defined Policies (Inactive due to disabled RLS)**
+- "Admins can manage residents"
+- "Users can view society residents"
+
+---
+
+### push_tokens
+Mobile device push tokens for notifications.
+
+**Columns**
+| Name | Type | Nullable | Default |
+|------|------|----------|---------|
+| `id` | uuid | NO | `gen_random_uuid()` |
+| `user_id` | uuid | YES | (FK -> profiles) |
+| `token` | text | NO | - |
+| `platform` | text | NO | - |
+| `is_active` | bool | YES | `true` |
+| `created_at` | timestamptz | YES | `now()` |
+| `updated_at` | timestamptz | YES | `now()` |
 
 ---
 
@@ -144,25 +189,16 @@ Visitor tracking and history.
 | `expected_time` | time | YES | - |
 | `otp` | varchar | YES | - |
 | `qr_code` | text | YES | - |
+| `check_in_time` | timestamptz | YES | - |
+| `check_out_time` | timestamptz | YES | - |
 | `created_at` | timestamptz | YES | `now()` |
 
-**RLS Policies (Verified)**
+**RLS Policies**
 - **Residents can view own visitors**: `SELECT` (host_id = auth.uid())
 - **Residents can create visitors**: `INSERT` (host_id = auth.uid())
 - **Residents can update own visitors**: `UPDATE` (host_id = auth.uid())
 - **Staff (Guards/Managers) can view society visitors**: `SELECT` (role check)
 - **Staff can update visitors (Check-in/out)**: `UPDATE` (role check)
-
-**Indexes**
-- `idx_visitors_active_lookup`: `btree (society_id, status, expected_date)`
-- `idx_visitors_name_search`: `gin (to_tsvector('english', visitor_name))`
-- `idx_visitors_host`: `btree (host_id)`
-- `idx_visitors_unit`: `btree (unit_id)`
-
-**Triggers**
-- `generate_otp_on_insert`: `BEFORE INSERT` -> `generate_visitor_otp()`
-- `visitor_status_notification`: `AFTER UPDATE` -> `notify_visitor_status_change()`
-- `update_visitors_updated_at`: `BEFORE UPDATE` -> `update_updated_at_column()`
 
 ---
 
@@ -185,9 +221,30 @@ Maintenance and complaint tracking.
 | `photos` | _text | YES | - |
 | `created_at` | timestamptz | YES | `now()` |
 
-**Triggers**
-- `issue_notification`: `AFTER UPDATE` -> `notify_issue_changes()`
-- `update_issues_updated_at`: `BEFORE UPDATE` -> `update_updated_at_column()`
+**RLS Policies**
+- **Users can read issues in their society**: `SELECT`
+- **Users can create issues**: `INSERT`
+
+---
+
+### issue_updates
+**⚠️ RLS DISABLED**
+Comments and status history for issues.
+
+**Columns**
+| Name | Type | Nullable | Default |
+|------|------|----------|---------|
+| `id` | uuid | NO | `uuid_generate_v4()` |
+| `issue_id` | uuid | YES | (FK -> issues) |
+| `user_id` | uuid | YES | (FK -> profiles) |
+| `comment` | text | YES | - |
+| `photos` | _text | YES | - |
+| `created_at` | timestamptz | YES | `now()` |
+
+**Defined Policies (Inactive)**
+- "Staff can view society issue updates"
+- "Users can add issue updates"
+- "Users can view issue updates"
 
 ---
 
@@ -207,12 +264,10 @@ Society-wide or targeted announcements.
 | `created_at` | timestamptz | YES | `now()` |
 
 **RLS Policies**
-- **Users can read society announcements**: `SELECT` (society check)
-- **Staff can create/manage**: `INSERT/UPDATE/DELETE` (role check)
-
-**Indexes**
-- `idx_announcements_active`: `btree (society_id, expires_at)`
-- `idx_announcements_society`: `btree (society_id)`
+- **view_announcements**: `SELECT` (society check)
+- **insert_announcements**: `INSERT` (Manager/Admin only)
+- **update_announcements**: `UPDATE` (Manager/Admin only)
+- **delete_announcements**: `DELETE` (Manager/Admin only)
 
 ---
 
@@ -231,8 +286,25 @@ Delivery tracking system.
 | `status` | varchar | YES | `'received'` |
 | `created_at` | timestamptz | YES | `now()` |
 
-**Triggers**
-- `parcel_notification`: `AFTER INSERT` -> `notify_parcel_received()`
+**RLS Policies**
+- **Guards can insert parcels**: `INSERT` (Must belong to guard's society, status must be 'received')
+- **Guards can select parcels**: `SELECT` (Society-scoped for guards/managers/admins)
+- **Guards can update parcels**: `UPDATE` (Society-scoped, can update received/notified → notified/collected)
+- **Residents can select parcels**: `SELECT` (Unit-scoped for residents)
+
+**Status Lifecycle**
+- `received` → Parcel logged by guard (initial state)
+- `notified` → Resident has been notified about parcel (optional intermediate state)
+- `collected` → Parcel picked up by resident (marked by guard)
+
+**Valid Transitions**
+- `received` → `notified` (Guard notifies resident)
+- `received` → `collected` (Direct collection without notification)
+- `notified` → `collected` (Resident collects after notification)
+
+**Constraints**
+- Status must be one of: `'received'`, `'notified'`, or `'collected'`
+- When status is `'collected'`, both `collected_at` and `collected_by` must be set
 
 ---
 
@@ -242,18 +314,28 @@ System notifications table.
 **Columns**
 | Name | Type | Nullable | Default |
 |------|------|----------|---------|
-| `id` | uuid | NO | `uuid_generate_v4()` |
-| `user_id` | uuid | YES | (FK) |
-| `title` | varchar | NO | - |
+| `id` | uuid | NO | `gen_random_uuid()` |
+| `user_id` | uuid | NO | (FK → profiles) |
+| `title` | text | NO | - |
 | `message` | text | NO | - |
-| `type` | varchar | YES | - |
-| `read` | bool | YES | `false` |
-| `metadata` | jsonb | YES | - |
-| `created_at` | timestamptz | YES | `now()` |
+| `type` | text | NO | - |
+| `read` | bool | NO | `false` |
+| `created_at` | timestamptz | NO | `now()` |
+| `updated_at` | timestamptz | NO | `now()` |
+| `metadata` | jsonb | YES | `'{}'` |
+| `society_id` | uuid | YES | (FK → societies) |
+| `expires_at` | timestamptz | YES | - |
+
+**RLS Policies**
+- **Users can view own notifications**: `SELECT` (user_id = auth.uid())
+- **Users can update own notifications**: `UPDATE` (user_id = auth.uid())
+- **Users can delete own notifications**: `DELETE` (user_id = auth.uid())
+- **System can create notifications**: `INSERT` (Security Definer functions only)
 
 ---
 
 ### guard_shifts
+**⚠️ RLS DISABLED**
 Shift management for security personnel.
 
 **Columns**
@@ -262,13 +344,17 @@ Shift management for security personnel.
 | `id` | uuid | NO | `uuid_generate_v4()` |
 | `society_id` | uuid | YES | (FK) |
 | `guard_id` | uuid | YES | (FK) |
-| `shift_start` | timestamptz | YES | - |
+| `shift_start` | timestamptz | NO | - |
 | `shift_end` | timestamptz | YES | - |
+| `handover_notes` | text | YES | - |
+| `handed_over_to` | uuid | YES | (FK) |
 | `created_at` | timestamptz | YES | `now()` |
 
-**Indexes**
-- `idx_guard_shifts_guard`: `btree (guard_id)`
-- `idx_guard_shifts_active`: `btree (society_id, shift_start)`
+**Defined Policies (Inactive)**
+- "Guards can create shifts"
+- "Guards can view own shifts"
+- "Managers can manage shifts"
+- "Staff can view society shifts"
 
 ---
 

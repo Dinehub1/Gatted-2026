@@ -1,5 +1,5 @@
 import { NotificationsScreen } from '@/components/screens';
 
-export default function ResidentNotifications() {
+export default function ManagerNotifications() {
     return <NotificationsScreen />;
 }
