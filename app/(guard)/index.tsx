@@ -78,10 +78,15 @@ export default function GuardHome() {
                 greeting="Hello,"
                 title={profile?.full_name || 'Guard'}
                 subtitle={currentRole?.society?.name || 'Society'}
+                secondaryRightAction={{
+                    icon: 'notifications-outline',
+                    color: '#64748b',
+                    onPress: () => router.push('/(guard)/notifications'),
+                }}
                 rightAction={{
-                    icon: 'log-out-outline',
-                    color: '#ef4444',
-                    onPress: signOut,
+                    icon: 'person-circle-outline',
+                    color: '#3b82f6',
+                    onPress: () => router.push('/(guard)/profile'),
                 }}
             />
 

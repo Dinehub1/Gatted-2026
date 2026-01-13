@@ -1,4 +1,3 @@
-import { Card } from '@/components/Card';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import {
     ActionButton,
@@ -11,7 +10,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 type VisitorSummary = {
     upcoming: number;
@@ -96,6 +95,11 @@ export default function ResidentHome() {
                 greeting="Welcome Back"
                 title={profile?.full_name || 'Resident'}
                 subtitle={`Unit: ${currentRole?.unit?.unit_number || 'N/A'}`}
+                secondaryRightAction={{
+                    icon: 'notifications-outline',
+                    color: '#64748b',
+                    onPress: () => router.push('/(resident)/notifications'),
+                }}
                 rightAction={{
                     icon: 'person-circle-outline',
                     color: '#3b82f6',
@@ -155,25 +159,44 @@ export default function ResidentHome() {
                 />
 
                 <ActionButton
-                    icon="warning-outline"
-                    title="Raise Issue"
-                    subtitle="Report a problem"
+                    icon="construct-outline"
+                    title="My Issues"
+                    subtitle={`${issueSummary.open} open issues`}
                     variant="danger"
-                    onPress={() => router.push('/(resident)/raise-issue')}
+                    onPress={() => router.push('/(resident)/my-issues')}
+                />
+
+                <ActionButton
+                    icon="cube-outline"
+                    title="My Parcels"
+                    subtitle="Track your deliveries"
+                    variant="warning"
+                    onPress={() => router.push('/(resident)/my-parcels')}
+                />
+
+                <ActionButton
+                    icon="megaphone-outline"
+                    title="Announcements"
+                    subtitle="Society updates & news"
+                    variant="info"
+                    onPress={() => router.push('/(resident)/announcements')}
                 />
 
                 <ActionButton
                     icon="people-outline"
                     title="Manage Family"
                     subtitle="Add members to unit"
-                    variant="info"
+                    backgroundColor="#64748b"
                     onPress={() => router.push('/(resident)/family')}
                 />
 
-                <SectionTitle>Recent Announcements</SectionTitle>
-                <Card>
-                    <Text style={styles.emptyText}>No recent announcements</Text>
-                </Card>
+                <ActionButton
+                    icon="add-circle-outline"
+                    title="Raise Issue"
+                    subtitle="Report a problem"
+                    backgroundColor="#ef4444"
+                    onPress={() => router.push('/(resident)/raise-issue')}
+                />
 
                 <View style={styles.spacer} />
             </ScrollView>

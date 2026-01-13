@@ -13,9 +13,14 @@ interface PageHeaderProps {
         color?: string;
         onPress: () => void;
     };
+    secondaryRightAction?: {
+        icon: keyof typeof Ionicons.glyphMap;
+        color?: string;
+        onPress: () => void;
+    };
 }
 
-export function PageHeader({ greeting, title, subtitle, showBack, onBack, rightAction }: PageHeaderProps) {
+export function PageHeader({ greeting, title, subtitle, showBack, onBack, rightAction, secondaryRightAction }: PageHeaderProps) {
     return (
         <View style={styles.header}>
             {showBack && (
@@ -28,6 +33,15 @@ export function PageHeader({ greeting, title, subtitle, showBack, onBack, rightA
                 <Text style={styles.title}>{title}</Text>
                 {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
             </View>
+            {secondaryRightAction && (
+                <TouchableOpacity onPress={secondaryRightAction.onPress} style={styles.actionButton}>
+                    <Ionicons
+                        name={secondaryRightAction.icon}
+                        size={24}
+                        color={secondaryRightAction.color || '#64748b'}
+                    />
+                </TouchableOpacity>
+            )}
             {rightAction && (
                 <TouchableOpacity onPress={rightAction.onPress} style={styles.actionButton}>
                     <Ionicons

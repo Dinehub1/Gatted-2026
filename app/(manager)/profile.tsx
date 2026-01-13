@@ -1,5 +1,5 @@
 import { ProfileScreen } from '@/components/screens';
 
-export default function ResidentProfile() {
+export default function ManagerProfile() {
     return <ProfileScreen />;
 }
