@@ -48,6 +48,19 @@ export default function ManageUsers() {
         fetchSocieties();
     }, []);
 
+    // Role color mapping for badges
+    const getRoleColor = (role: string) => {
+        switch (role?.toLowerCase()) {
+            case 'admin': return { bg: '#fee2e2', text: '#dc2626', border: '#fecaca' };
+            case 'manager': return { bg: '#dbeafe', text: '#2563eb', border: '#bfdbfe' };
+            case 'guard': return { bg: '#d1fae5', text: '#059669', border: '#a7f3d0' };
+            case 'resident': return { bg: '#ede9fe', text: '#7c3aed', border: '#ddd6fe' };
+            case 'owner': return { bg: '#fef3c7', text: '#d97706', border: '#fde68a' };
+            case 'tenant': return { bg: '#f3e8ff', text: '#9333ea', border: '#e9d5ff' };
+            default: return { bg: '#f1f5f9', text: '#64748b', border: '#e2e8f0' };
+        }
+    };
+
     const fetchSocieties = async () => {
         const { data, error } = await supabase
             .from('societies')
@@ -169,27 +182,34 @@ export default function ManageUsers() {
         (user.phone || '').includes(searchQuery)
     );
 
-    const renderUserItem = ({ item }: { item: UserProfile }) => (
-        <TouchableOpacity
-            style={styles.userCard}
-            onPress={() => openModal(item)}
-        >
-            <View style={styles.avatarContainer}>
-                <Text style={styles.avatarText}>
-                    {(item.full_name || 'U').charAt(0).toUpperCase()}
-                </Text>
-            </View>
-            <View style={styles.userInfo}>
-                <Text style={styles.userName}>{item.full_name || 'Unknown User'}</Text>
-                <Text style={styles.userEmail}>{item.email || item.phone}</Text>
-                <View style={styles.roleRow}>
-                    <Text style={styles.userRole}>{item.role?.toUpperCase()}</Text>
-                    <Text style={styles.societyName}> • {item.society_name}</Text>
+    const renderUserItem = ({ item }: { item: UserProfile }) => {
+        const roleColors = getRoleColor(item.role || '');
+        return (
+            <TouchableOpacity
+                style={styles.userCard}
+                onPress={() => openModal(item)}
+            >
+                <View style={[styles.avatarContainer, { backgroundColor: roleColors.bg }]}>
+                    <Text style={[styles.avatarText, { color: roleColors.text }]}>
+                        {(item.full_name || 'U').charAt(0).toUpperCase()}
+                    </Text>
                 </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-        </TouchableOpacity>
-    );
+                <View style={styles.userInfo}>
+                    <Text style={styles.userName}>{item.full_name || 'Unknown User'}</Text>
+                    <Text style={styles.userEmail}>{item.email || item.phone}</Text>
+                    <View style={styles.roleRow}>
+                        <View style={[styles.roleBadge, { backgroundColor: roleColors.bg, borderColor: roleColors.border }]}>
+                            <Text style={[styles.roleBadgeText, { color: roleColors.text }]}>
+                                {item.role?.toUpperCase() || 'N/A'}
+                            </Text>
+                        </View>
+                        <Text style={styles.societyName}>{item.society_name}</Text>
+                    </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <View style={styles.container}>
@@ -386,11 +406,23 @@ const styles = StyleSheet.create({
     roleRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 2,
+        marginTop: 4,
+        gap: 8,
+    },
+    roleBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+        borderWidth: 1,
+    },
+    roleBadgeText: {
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 0.5,
     },
     societyName: {
         fontSize: 12,
-        color: '#94a3b8',
+        color: '#64748b',
     },
     emptyText: {
         textAlign: 'center',
