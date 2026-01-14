@@ -1,3 +1,4 @@
+import ContextMenu from '@/components/admin/ContextMenu';
 import { PageHeader, SectionTitle } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,177 +7,198 @@ import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    Modal,
+    RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
 
 type Society = {
     id: string;
     name: string;
     city: string | null;
-    total_blocks: number | null;
-    total_units: number | null;
+    is_archived?: boolean;
+    block_count?: number;
+    unit_count?: number;
+    manager_count?: number;
 };
 
-type Block = {
-    id: string;
-    name: string;
-    society_id: string | null;
-    total_floors: number | null;
-};
-
-type Unit = {
-    id: string;
-    unit_number: string;
-    floor: number | null;
-    block_id: string | null;
-};
-
-export default function ManageUnits() {
+export default function ManageProperties() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [societies, setSocieties] = useState<Society[]>([]);
-    const [blocks, setBlocks] = useState<Block[]>([]);
-    const [units, setUnits] = useState<Unit[]>([]);
-
-    const [selectedSociety, setSelectedSociety] = useState<Society | null>(null);
-    const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
-
-    // Modal States
-    const [createModalVisible, setCreateModalVisible] = useState(false);
-    const [createType, setCreateType] = useState<'society' | 'block' | 'unit'>('society');
-    const [newItemName, setNewItemName] = useState('');
-    const [newItemExtra, setNewItemExtra] = useState(''); // e.g. City for Society, Floor for Unit
+    const [isEditMode, setIsEditMode] = useState(false);
 
     useEffect(() => {
         fetchSocieties();
     }, []);
 
-    useEffect(() => {
-        if (selectedSociety) {
-            fetchBlocks(selectedSociety.id);
-        } else {
-            setBlocks([]);
-            setUnits([]);
-        }
-    }, [selectedSociety]);
-
-    useEffect(() => {
-        if (selectedBlock) {
-            fetchUnits(selectedBlock.id);
-        } else {
-            setUnits([]);
-        }
-    }, [selectedBlock]);
-
     const fetchSocieties = async () => {
-        setLoading(true);
-        const { data, error } = await supabase.from('societies').select('*');
-        if (!error && data) setSocieties(data);
-        setLoading(false);
-    };
-
-    const fetchBlocks = async (societyId: string) => {
-        const { data, error } = await supabase
-            .from('blocks')
-            .select('*')
-            .eq('society_id', societyId)
-            .order('name');
-        if (!error && data) setBlocks(data);
-    };
-
-    const fetchUnits = async (blockId: string) => {
-        const { data, error } = await supabase
-            .from('units')
-            .select('*')
-            .eq('block_id', blockId)
-            .order('unit_number');
-        if (!error && data) setUnits(data);
-    };
-
-    const handleCreate = async () => {
-        if (!newItemName) return;
-
         try {
-            if (createType === 'society') {
-                const { error } = await supabase.from('societies').insert({
-                    name: newItemName,
-                    city: newItemExtra || 'Unknown',
-                    total_blocks: 0,
-                    total_units: 0
-                });
-                if (error) throw error;
-                fetchSocieties();
-            } else if (createType === 'block' && selectedSociety) {
-                const { error } = await supabase.from('blocks').insert({
-                    name: newItemName,
-                    society_id: selectedSociety.id,
-                    total_floors: 0
-                });
-                if (error) throw error;
-                fetchBlocks(selectedSociety.id);
-            } else if (createType === 'unit' && selectedBlock && selectedSociety) {
-                const { error } = await supabase.from('units').insert({
-                    unit_number: newItemName,
-                    floor: parseInt(newItemExtra) || 0,
-                    block_id: selectedBlock.id,
-                    society_id: selectedSociety.id
-                });
-                if (error) throw error;
-                fetchUnits(selectedBlock.id);
-            }
-            setCreateModalVisible(false);
-            setNewItemName('');
-            setNewItemExtra('');
-            Alert.alert('Success', `${createType.charAt(0).toUpperCase() + createType.slice(1)} created`);
-        } catch (error: any) {
-            Alert.alert('Error', error.message);
+            // Get societies with counts
+            const { data: societiesData, error } = await supabase
+                .from('societies')
+                .select('*')
+                .eq('is_archived', false)
+                .order('name');
+
+            if (error) throw error;
+
+            // Get block and unit counts for each society
+            const societiesWithCounts = await Promise.all(
+                (societiesData || []).map(async (society) => {
+                    const [blocksRes, unitsRes, managersRes] = await Promise.all([
+                        supabase
+                            .from('blocks')
+                            .select('id', { count: 'exact', head: true })
+                            .eq('society_id', society.id)
+                            .eq('is_archived', false),
+                        supabase
+                            .from('units')
+                            .select('id', { count: 'exact', head: true })
+                            .eq('society_id', society.id)
+                            .eq('is_archived', false),
+                        supabase
+                            .from('user_roles')
+                            .select('id', { count: 'exact', head: true })
+                            .eq('society_id', society.id)
+                            .eq('role', 'manager')
+                            .eq('is_active', true),
+                    ]);
+
+                    return {
+                        ...society,
+                        block_count: blocksRes.count || 0,
+                        unit_count: unitsRes.count || 0,
+                        manager_count: managersRes.count || 0,
+                    };
+                })
+            );
+
+            setSocieties(societiesWithCounts);
+        } catch (error) {
+            console.error('Error fetching societies:', error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
         }
     };
 
-    const openCreateModal = (type: 'society' | 'block' | 'unit') => {
-        setCreateType(type);
-        setNewItemName('');
-        setNewItemExtra('');
-        setCreateModalVisible(true);
+    const handleRefresh = () => {
+        setRefreshing(true);
+        fetchSocieties();
     };
 
-    const renderHeader = () => (
-        <View>
-            <PageHeader
-                title="Property Management"
-                subtitle="Manage Societies, Blocks, and Units"
-                showBack
-                onBack={() => router.back()}
-            />
-            {/* Breadcrumbsish Navigation */}
-            <View style={styles.breadcrumb}>
-                <TouchableOpacity onPress={() => { setSelectedSociety(null); setSelectedBlock(null); }}>
-                    <Text style={[styles.crumbText, !selectedSociety && styles.crumbActive]}>All Societies</Text>
-                </TouchableOpacity>
-                {selectedSociety && (
-                    <>
-                        <Ionicons name="chevron-forward" size={16} color="#64748b" />
-                        <TouchableOpacity onPress={() => setSelectedBlock(null)}>
-                            <Text style={[styles.crumbText, !selectedBlock && styles.crumbActive]}>
-                                {selectedSociety.name}
-                            </Text>
-                        </TouchableOpacity>
-                    </>
-                )}
-                {selectedBlock && (
-                    <>
-                        <Ionicons name="chevron-forward" size={16} color="#64748b" />
-                        <Text style={[styles.crumbText, styles.crumbActive]}>
-                            {selectedBlock.name}
-                        </Text>
-                    </>
-                )}
+    const handleArchive = (society: Society) => {
+        const hasData = (society.block_count || 0) > 0 || (society.unit_count || 0) > 0;
+
+        Alert.alert(
+            '⚠️ Archive Society?',
+            hasData
+                ? `This society has:\n• ${society.block_count} blocks\n• ${society.unit_count} units\n• ${society.manager_count} managers\n\nArchived societies can be restored later.`
+                : 'Archive this society? It can be restored later.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Archive',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const { error } = await supabase
+                                .from('societies')
+                                .update({ is_archived: true })
+                                .eq('id', society.id);
+                            if (error) throw error;
+                            fetchSocieties();
+                            Alert.alert('Success', 'Society archived');
+                        } catch (error: any) {
+                            Alert.alert('Error', error.message);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const getMenuOptions = (society: Society) => [
+        {
+            label: 'View Blocks',
+            icon: 'eye-outline',
+            onPress: () => router.push(`/(admin)/society/${society.id}`),
+        },
+        {
+            label: 'Edit Society',
+            icon: 'pencil-outline',
+            onPress: () => router.push(`/(admin)/add-society?id=${society.id}`),
+            editModeOnly: true,
+        },
+        {
+            label: 'Archive Society',
+            icon: 'archive-outline',
+            onPress: () => handleArchive(society),
+            editModeOnly: true,
+            destructive: true,
+        },
+    ];
+
+    const renderEmptyState = () => (
+        <View style={styles.emptyState}>
+            <View style={styles.emptyIcon}>
+                <Ionicons name="business-outline" size={48} color="#94a3b8" />
+            </View>
+            <Text style={styles.emptyTitle}>No societies added yet</Text>
+            <Text style={styles.emptySubtitle}>
+                Start by adding your first society.{'\n'}
+                This defines the entire system structure.
+            </Text>
+            <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => router.push('/(admin)/add-society')}
+            >
+                <Ionicons name="add" size={20} color="#fff" />
+                <Text style={styles.emptyButtonText}>Add New Society</Text>
+            </TouchableOpacity>
+        </View>
+    );
+
+    const renderSocietyCard = (society: Society) => (
+        <View key={society.id} style={styles.card}>
+            <TouchableOpacity
+                style={styles.cardMain}
+                onPress={() => router.push(`/(admin)/society/${society.id}`)}
+            >
+                <View style={styles.cardIcon}>
+                    <Ionicons name="business" size={28} color="#2563eb" />
+                </View>
+                <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle}>{society.name}</Text>
+                    <View style={styles.cardLocation}>
+                        <Ionicons name="location-outline" size={14} color="#64748b" />
+                        <Text style={styles.cardLocationText}>{society.city || 'Unknown'}</Text>
+                    </View>
+                    <View style={styles.cardStats}>
+                        <View style={styles.stat}>
+                            <Text style={styles.statValue}>{society.block_count}</Text>
+                            <Text style={styles.statLabel}>Blocks</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.stat}>
+                            <Text style={styles.statValue}>{society.unit_count}</Text>
+                            <Text style={styles.statLabel}>Units</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.stat}>
+                            <Text style={styles.statValue}>{society.manager_count}</Text>
+                            <Text style={styles.statLabel}>Managers</Text>
+                        </View>
+                    </View>
+                </View>
+            </TouchableOpacity>
+            <View style={styles.cardMenu}>
+                <ContextMenu options={getMenuOptions(society)} isEditMode={isEditMode} />
             </View>
         </View>
     );
@@ -184,140 +206,78 @@ export default function ManageUnits() {
     return (
         <View style={styles.container}>
             <Stack.Screen options={{ headerShown: false }} />
-            {renderHeader()}
+
+            <PageHeader
+                title="Property Management"
+                subtitle="Societies · Blocks · Units"
+                showBack
+                onBack={() => router.back()}
+            />
+
+            {/* Mode Toggle */}
+            <View style={styles.modeToggle}>
+                <TouchableOpacity
+                    style={[styles.modeButton, !isEditMode && styles.modeButtonActive]}
+                    onPress={() => setIsEditMode(false)}
+                >
+                    <Ionicons name="eye-outline" size={16} color={!isEditMode ? '#fff' : '#64748b'} />
+                    <Text style={[styles.modeButtonText, !isEditMode && styles.modeButtonTextActive]}>
+                        View Mode
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.modeButton, isEditMode && styles.modeButtonActive]}
+                    onPress={() => setIsEditMode(true)}
+                >
+                    <Ionicons name="pencil-outline" size={16} color={isEditMode ? '#fff' : '#64748b'} />
+                    <Text style={[styles.modeButtonText, isEditMode && styles.modeButtonTextActive]}>
+                        Edit Mode
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Info Banner */}
+            <View style={styles.infoBanner}>
+                <Ionicons name="information-circle-outline" size={18} color="#64748b" />
+                <Text style={styles.infoBannerText}>
+                    Configure physical structure. Changes affect access & visitors.
+                </Text>
+            </View>
 
             <View style={styles.content}>
                 {loading ? (
-                    <ActivityIndicator size="large" color="#2563eb" />
+                    <ActivityIndicator size="large" color="#2563eb" style={{ marginTop: 40 }} />
                 ) : (
-                    <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-                        {!selectedSociety ? (
-                            // Society List
-                            <>
-                                <View style={styles.sectionHeader}>
-                                    <SectionTitle>Societies</SectionTitle>
-                                    <TouchableOpacity onPress={() => openCreateModal('society')}>
-                                        <Ionicons name="add-circle" size={28} color="#2563eb" />
-                                    </TouchableOpacity>
-                                </View>
-                                {societies.map(society => (
-                                    <TouchableOpacity
-                                        key={society.id}
-                                        style={styles.card}
-                                        onPress={() => setSelectedSociety(society)}
-                                    >
-                                        <View>
-                                            <Text style={styles.cardTitle}>{society.name}</Text>
-                                            <Text style={styles.cardSubtitle}>{society.city}</Text>
-                                        </View>
-                                        <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
-                                    </TouchableOpacity>
-                                ))}
-                            </>
-                        ) : !selectedBlock ? (
-                            // Block List
-                            <>
-                                <View style={styles.sectionHeader}>
-                                    <SectionTitle>Blocks in {selectedSociety.name}</SectionTitle>
-                                    <TouchableOpacity onPress={() => openCreateModal('block')}>
-                                        <Ionicons name="add-circle" size={28} color="#2563eb" />
-                                    </TouchableOpacity>
-                                </View>
-                                {blocks.length === 0 && <Text style={styles.emptyText}>No blocks found.</Text>}
-                                {blocks.map(block => (
-                                    <TouchableOpacity
-                                        key={block.id}
-                                        style={styles.card}
-                                        onPress={() => setSelectedBlock(block)}
-                                    >
-                                        <View>
-                                            <Text style={styles.cardTitle}>{block.name}</Text>
-                                            <Text style={styles.cardSubtitle}>Block ID: {block.id.split('-')[0]}</Text>
-                                        </View>
-                                        <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
-                                    </TouchableOpacity>
-                                ))}
-                            </>
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        refreshControl={
+                            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                        }
+                        contentContainerStyle={societies.length === 0 ? { flex: 1 } : { paddingBottom: 100 }}
+                    >
+                        {societies.length === 0 ? (
+                            renderEmptyState()
                         ) : (
-                            // Unit List
                             <>
                                 <View style={styles.sectionHeader}>
-                                    <SectionTitle>Units in {selectedBlock.name}</SectionTitle>
-                                    <TouchableOpacity onPress={() => openCreateModal('unit')}>
-                                        <Ionicons name="add-circle" size={28} color="#2563eb" />
-                                    </TouchableOpacity>
+                                    <SectionTitle>Societies ({societies.length})</SectionTitle>
                                 </View>
-                                {units.length === 0 && <Text style={styles.emptyText}>No units found.</Text>}
-                                {units.map(unit => (
-                                    <View key={unit.id} style={styles.card}>
-                                        <View>
-                                            <Text style={styles.cardTitle}>Unit {unit.unit_number}</Text>
-                                            <Text style={styles.cardSubtitle}>Floor {unit.floor}</Text>
-                                        </View>
-                                    </View>
-                                ))}
+                                {societies.map(renderSocietyCard)}
                             </>
                         )}
                     </ScrollView>
                 )}
             </View>
 
-            {/* Creation Modal */}
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={createModalVisible}
-                onRequestClose={() => setCreateModalVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>
-                            New {createType.charAt(0).toUpperCase() + createType.slice(1)}
-                        </Text>
-
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Name / Number"
-                            value={newItemName}
-                            onChangeText={setNewItemName}
-                        />
-
-                        {createType === 'society' && (
-                            <TextInput
-                                style={styles.input}
-                                placeholder="City"
-                                value={newItemExtra}
-                                onChangeText={setNewItemExtra}
-                            />
-                        )}
-
-                        {createType === 'unit' && (
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Floor Number"
-                                value={newItemExtra}
-                                onChangeText={setNewItemExtra}
-                                keyboardType="numeric"
-                            />
-                        )}
-
-                        <View style={styles.modalActions}>
-                            <TouchableOpacity
-                                style={[styles.modalBtn, styles.cancelBtn]}
-                                onPress={() => setCreateModalVisible(false)}
-                            >
-                                <Text style={styles.cancelBtnText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.modalBtn, styles.saveBtn]}
-                                onPress={handleCreate}
-                            >
-                                <Text style={styles.saveBtnText}>Create</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            {/* Add Society FAB */}
+            {societies.length > 0 && (
+                <TouchableOpacity
+                    style={styles.fab}
+                    onPress={() => router.push('/(admin)/add-society')}
+                >
+                    <Ionicons name="add" size={28} color="#fff" />
+                </TouchableOpacity>
+            )}
         </View>
     );
 }
@@ -327,106 +287,182 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f8fafc',
     },
-    breadcrumb: {
+    modeToggle: {
+        flexDirection: 'row',
+        marginHorizontal: 20,
+        marginTop: 8,
+        backgroundColor: '#e2e8f0',
+        borderRadius: 10,
+        padding: 4,
+    },
+    modeButton: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingBottom: 10,
+        justifyContent: 'center',
+        paddingVertical: 10,
+        borderRadius: 8,
+        gap: 6,
+    },
+    modeButtonActive: {
+        backgroundColor: '#2563eb',
+    },
+    modeButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#64748b',
+    },
+    modeButtonTextActive: {
+        color: '#fff',
+    },
+    infoBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginHorizontal: 20,
+        marginTop: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        backgroundColor: '#f1f5f9',
+        borderRadius: 8,
         gap: 8,
     },
-    crumbText: {
-        fontSize: 14,
+    infoBannerText: {
+        flex: 1,
+        fontSize: 13,
         color: '#64748b',
-        fontWeight: '500',
-    },
-    crumbActive: {
-        color: '#2563eb',
-        fontWeight: '700',
     },
     content: {
         flex: 1,
         paddingHorizontal: 20,
+        marginTop: 16,
     },
     sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 10,
+        marginBottom: 12,
     },
     card: {
         backgroundColor: '#fff',
-        padding: 16,
-        borderRadius: 12,
-        marginBottom: 10,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        borderRadius: 16,
+        marginBottom: 12,
         borderWidth: 1,
         borderColor: '#e2e8f0',
+        overflow: 'hidden',
+    },
+    cardMain: {
+        flexDirection: 'row',
+        padding: 16,
+    },
+    cardIcon: {
+        width: 56,
+        height: 56,
+        borderRadius: 14,
+        backgroundColor: '#eff6ff',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 14,
+    },
+    cardContent: {
+        flex: 1,
     },
     cardTitle: {
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: '600',
         color: '#1e293b',
+        marginBottom: 4,
     },
-    cardSubtitle: {
+    cardLocation: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginBottom: 12,
+    },
+    cardLocationText: {
         fontSize: 13,
         color: '#64748b',
-        marginTop: 2,
     },
-    emptyText: {
-        textAlign: 'center',
-        color: '#94a3b8',
-        marginTop: 20,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        padding: 20,
-    },
-    modalContent: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 24,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        color: '#1e293b',
-        textAlign: 'center',
-    },
-    input: {
-        backgroundColor: '#f1f5f9',
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 12,
-        fontSize: 16,
-    },
-    modalActions: {
+    cardStats: {
         flexDirection: 'row',
-        gap: 12,
-        marginTop: 12,
-    },
-    modalBtn: {
-        flex: 1,
-        padding: 14,
-        borderRadius: 8,
         alignItems: 'center',
     },
-    cancelBtn: {
+    stat: {
+        alignItems: 'center',
+    },
+    statValue: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1e293b',
+    },
+    statLabel: {
+        fontSize: 11,
+        color: '#94a3b8',
+        marginTop: 2,
+    },
+    statDivider: {
+        width: 1,
+        height: 24,
+        backgroundColor: '#e2e8f0',
+        marginHorizontal: 16,
+    },
+    cardMenu: {
+        position: 'absolute',
+        top: 12,
+        right: 8,
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 40,
+    },
+    emptyIcon: {
+        width: 88,
+        height: 88,
+        borderRadius: 44,
         backgroundColor: '#f1f5f9',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
     },
-    saveBtn: {
-        backgroundColor: '#2563eb',
+    emptyTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1e293b',
+        marginBottom: 8,
     },
-    cancelBtnText: {
+    emptySubtitle: {
+        fontSize: 14,
         color: '#64748b',
-        fontWeight: '600',
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 24,
     },
-    saveBtnText: {
-        color: '#fff',
+    emptyButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#2563eb',
+        paddingHorizontal: 24,
+        paddingVertical: 14,
+        borderRadius: 12,
+        gap: 8,
+    },
+    emptyButtonText: {
+        fontSize: 16,
         fontWeight: '600',
+        color: '#fff',
+    },
+    fab: {
+        position: 'absolute',
+        bottom: 30,
+        right: 20,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: '#2563eb',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#2563eb',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
     },
 });

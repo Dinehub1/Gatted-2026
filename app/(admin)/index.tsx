@@ -15,12 +15,14 @@ import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-nativ
 type Stats = {
     totalUsers: number;
     totalSocieties: number;
+    activeGuards: number;
+    openIssues: number;
 };
 
 export default function AdminHome() {
     const { signOut, profile } = useAuth();
     const router = useRouter();
-    const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalSocieties: 0 });
+    const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalSocieties: 0, activeGuards: 0, openIssues: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -36,9 +38,24 @@ export default function AdminHome() {
                 .from('societies')
                 .select('*', { count: 'exact', head: true });
 
+            // Get active guards count
+            const { count: guardsCount } = await supabase
+                .from('user_roles')
+                .select('*', { count: 'exact', head: true })
+                .eq('role', 'guard')
+                .eq('is_active', true);
+
+            // Get open issues count
+            const { count: issuesCount } = await supabase
+                .from('issues')
+                .select('*', { count: 'exact', head: true })
+                .in('status', ['open', 'in-progress']);
+
             setStats({
                 totalUsers: usersCount || 0,
                 totalSocieties: societiesCount || 0,
+                activeGuards: guardsCount || 0,
+                openIssues: issuesCount || 0,
             });
         } catch (error) {
             console.error('Error loading stats:', error);
@@ -101,6 +118,23 @@ export default function AdminHome() {
                         value={stats.totalSocieties}
                         label="Societies"
                         backgroundColor="#dbeafe"
+                    />
+                </StatRow>
+
+                <StatRow>
+                    <StatCard
+                        icon="shield-checkmark-outline"
+                        iconColor="#10b981"
+                        value={stats.activeGuards}
+                        label="Active Guards"
+                        backgroundColor="#d1fae5"
+                    />
+                    <StatCard
+                        icon="warning-outline"
+                        iconColor="#f59e0b"
+                        value={stats.openIssues}
+                        label="Open Issues"
+                        backgroundColor="#fef3c7"
                     />
                 </StatRow>
 
