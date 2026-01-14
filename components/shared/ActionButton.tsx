@@ -8,6 +8,7 @@ interface ActionButtonProps {
     icon: keyof typeof Ionicons.glyphMap;
     title: string;
     subtitle?: string;
+    badge?: number | string;
     variant?: ActionButtonVariant;
     backgroundColor?: string;
     onPress: () => void;
@@ -27,6 +28,7 @@ export function ActionButton({
     icon,
     title,
     subtitle,
+    badge,
     variant = 'primary',
     backgroundColor,
     onPress,
@@ -45,7 +47,14 @@ export function ActionButton({
                 <Ionicons name={icon} size={iconSize} color="#fff" />
             </View>
             <View style={styles.content}>
-                <Text style={styles.title}>{title}</Text>
+                <View style={styles.titleRow}>
+                    <Text style={styles.title}>{title}</Text>
+                    {badge !== undefined && badge !== 0 && (
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>{badge}</Text>
+                        </View>
+                    )}
+                </View>
                 {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
             </View>
             <Ionicons name="chevron-forward" size={24} color="#fff" />
@@ -73,14 +82,31 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
     },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     title: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#fff',
         marginBottom: 4,
     },
+    badge: {
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 10,
+        marginLeft: 8,
+    },
+    badgeText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#fff',
+    },
     subtitle: {
         fontSize: 14,
         color: 'rgba(255, 255, 255, 0.9)',
     },
 });
+

@@ -20,6 +20,11 @@ interface Unit {
     floor?: number;
 }
 
+interface RecentUnit {
+    id: string;
+    unitNumber: string;
+}
+
 interface UnitSelectorProps {
     label?: string;
     societyId: string;
@@ -28,6 +33,7 @@ interface UnitSelectorProps {
     error?: string;
     containerStyle?: ViewStyle;
     required?: boolean;
+    recentUnits?: RecentUnit[];
 }
 
 export function UnitSelector({
@@ -38,6 +44,7 @@ export function UnitSelector({
     error,
     containerStyle,
     required,
+    recentUnits = [],
 }: UnitSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -253,6 +260,34 @@ export function UnitSelector({
                         </View>
                     ) : (
                         <ScrollView style={styles.optionsList}>
+                            {/* Recent Units Quick Select */}
+                            {recentUnits.length > 0 && getCurrentStep() === 'block' && (
+                                <View style={styles.recentUnitsSection}>
+                                    <Text style={styles.recentUnitsTitle}>Recent Units</Text>
+                                    <View style={styles.recentUnitsChips}>
+                                        {recentUnits.map((recent) => (
+                                            <TouchableOpacity
+                                                key={recent.id}
+                                                style={styles.recentUnitChip}
+                                                onPress={() => {
+                                                    const unit = units.find(u => u.id === recent.id);
+                                                    if (unit) {
+                                                        handleUnitSelect(unit);
+                                                    } else {
+                                                        // If not loaded yet, just use the recent data
+                                                        onSelect(recent.id, recent.unitNumber);
+                                                        setSelectedUnit({ id: recent.id, unit_number: recent.unitNumber });
+                                                        setIsOpen(false);
+                                                    }
+                                                }}
+                                            >
+                                                <Text style={styles.recentUnitChipText}>{recent.unitNumber}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+
                             {/* Show blocks */}
                             {getCurrentStep() === 'block' && blocks.map(block => (
                                 <TouchableOpacity
@@ -499,5 +534,38 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#64748b',
         marginTop: 12,
+    },
+    recentUnitsSection: {
+        marginHorizontal: 16,
+        marginBottom: 16,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e2e8f0',
+    },
+    recentUnitsTitle: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#64748b',
+        marginBottom: 10,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    recentUnitsChips: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    recentUnitChip: {
+        backgroundColor: '#eff6ff',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#bfdbfe',
+    },
+    recentUnitChipText: {
+        fontSize: 14,
+        color: '#3b82f6',
+        fontWeight: '500',
     },
 });
