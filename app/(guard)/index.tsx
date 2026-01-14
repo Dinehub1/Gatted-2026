@@ -1,93 +1,139 @@
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import {
+    ActivityFeed,
+    GuardPageHeader,
+    ShiftControls,
+} from '@/components/guard';
+import {
     ActionButton,
-    PageHeader,
-    SecondaryAction,
     SectionTitle,
     StatCard,
     StatRow,
 } from '@/components/shared';
+import { VisitorApprovalCard } from '@/components/shared/VisitorApprovalCard';
 import { useAuth } from '@/contexts/auth-context';
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-
-type Stats = {
-    visitorsToday: number;
-    currentlyInside: number;
-};
+import { useActivityFeed, useGuardDashboard, useGuardShift } from '@/hooks';
+import { useVisitorApproval } from '@/hooks/useVisitorApproval';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function GuardHome() {
-    const { signOut, profile, currentRole } = useAuth();
+    const { profile, currentRole } = useAuth();
     const router = useRouter();
 
-    const [stats, setStats] = useState<Stats>({ visitorsToday: 0, currentlyInside: 0 });
-    const [isLoading, setIsLoading] = useState(true);
+    const societyId = currentRole?.society_id;
+    const guardId = profile?.id;
+
+    // Hooks for data fetching
+    const { stats, isLoading: statsLoading, refresh: refreshStats } = useGuardDashboard({ societyId });
+    const { activities, isLoading: activitiesLoading, refresh: refreshActivities } = useActivityFeed({ societyId, limit: 5 });
+    const {
+        isShiftActive,
+        shiftDuration,
+        shiftStartTime,
+        isLoading: shiftLoading,
+        startShift,
+        endShift,
+        refresh: refreshShift
+    } = useGuardShift({ guardId, societyId });
+
+    // Visitor approval for pending/approved visitors
+    const {
+        pendingVisitors,
+        approvedVisitors,
+        pendingCount,
+        approvedCount,
+        checkIn,
+        refresh: refreshVisitors,
+        isLoading: visitorsLoading,
+    } = useVisitorApproval({
+        societyId,
+        userId: guardId,
+        role: 'guard',
+    });
+
     const [refreshing, setRefreshing] = useState(false);
 
-    const loadStats = async () => {
+    const isLoading = statsLoading || activitiesLoading || shiftLoading || visitorsLoading;
+
+    // Refresh on focus
+    useFocusEffect(
+        useCallback(() => {
+            refreshStats();
+            refreshActivities();
+            refreshShift();
+            refreshVisitors();
+        }, [societyId, guardId])
+    );
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await Promise.all([refreshStats(), refreshActivities(), refreshShift(), refreshVisitors()]);
+        setRefreshing(false);
+    }, [refreshStats, refreshActivities, refreshShift, refreshVisitors]);
+
+    const handleStartShift = async () => {
         try {
-            const societyId = currentRole?.society_id;
-            if (!societyId) return;
-
-            const today = new Date().toISOString().split('T')[0];
-
-            // Get today's visitors (expected for today or checked in today)
-            const { data: visitors } = await supabase
-                .from('visitors')
-                .select('id, status, expected_date, checked_in_at')
-                .eq('society_id', societyId);
-
-            const visitorsToday = visitors?.filter(v =>
-                v.expected_date === today ||
-                (v.checked_in_at && v.checked_in_at.startsWith(today))
-            ).length || 0;
-
-            const currentlyInside = visitors?.filter(v => v.status === 'checked-in').length || 0;
-
-            setStats({ visitorsToday, currentlyInside });
+            await startShift();
         } catch (error) {
-            console.error('Error loading stats:', error);
-        } finally {
-            setIsLoading(false);
-            setRefreshing(false);
+            Alert.alert('Error', 'Failed to start shift. Please try again.');
         }
     };
 
-    useEffect(() => {
-        loadStats();
-    }, [currentRole?.society_id]);
-
-    const onRefresh = () => {
-        setRefreshing(true);
-        loadStats();
+    const handleEndShift = async () => {
+        Alert.alert(
+            'End Shift',
+            'Are you sure you want to end your shift?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'End Shift',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await endShift();
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to end shift. Please try again.');
+                        }
+                    }
+                },
+            ]
+        );
     };
 
     const handleEmergency = () => {
         router.push('/(guard)/panic');
     };
 
-    if (isLoading) {
+    const handleCheckIn = async (visitorId: string) => {
+        if (!guardId) return false;
+        const success = await checkIn(visitorId, guardId);
+        if (success) {
+            Alert.alert('✅ Checked In', 'Visitor has been checked in successfully.');
+            refreshActivities();
+        } else {
+            Alert.alert('Error', 'Failed to check in visitor. Please try again.');
+        }
+        return success;
+    };
+
+    if (isLoading && !refreshing) {
         return <LoadingSpinner />;
     }
 
+    const totalPendingApproval = pendingCount + approvedCount;
+
     return (
         <View style={styles.container}>
-            <PageHeader
-                greeting="Hello,"
-                title={profile?.full_name || 'Guard'}
-                subtitle={currentRole?.society?.name || 'Society'}
-                secondaryRightAction={{
-                    icon: 'notifications-outline',
-                    color: '#64748b',
-                    onPress: () => router.push('/(guard)/notifications'),
-                }}
-                rightAction={{
-                    icon: 'person-circle-outline',
-                    color: '#3b82f6',
-                    onPress: () => router.push('/(guard)/profile'),
-                }}
+            <GuardPageHeader
+                guardName={profile?.full_name || 'Guard'}
+                societyName={currentRole?.society?.name || 'Society'}
+                isShiftActive={isShiftActive}
+                shiftDuration={shiftDuration}
+                onNotificationPress={() => router.push('/(guard)/notifications')}
+                onProfilePress={() => router.push('/(guard)/profile')}
             />
 
             <ScrollView
@@ -97,13 +143,119 @@ export default function GuardHome() {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" />
                 }
             >
+                {/* Pending Visitors Section - Shows visitors waiting for resident approval */}
+                {pendingCount > 0 && (
+                    <View style={styles.pendingSection}>
+                        <View style={styles.sectionHeader}>
+                            <View style={styles.sectionTitleContainer}>
+                                <Ionicons name="hourglass-outline" size={20} color="#f59e0b" />
+                                <Text style={styles.sectionHeaderTitle}>Waiting for Approval</Text>
+                            </View>
+                            <View style={[styles.badge, { backgroundColor: '#f59e0b' }]}>
+                                <Text style={styles.badgeText}>{pendingCount}</Text>
+                            </View>
+                        </View>
+                        {pendingVisitors.map((visitor) => (
+                            <VisitorApprovalCard
+                                key={visitor.id}
+                                visitor={{
+                                    id: visitor.id,
+                                    visitor_name: visitor.visitor_name,
+                                    visitor_phone: visitor.visitor_phone,
+                                    unit_number: visitor.unit_number,
+                                    purpose: visitor.purpose,
+                                    status: visitor.status,
+                                    created_at: visitor.created_at,
+                                }}
+                                role="guard"
+                            />
+                        ))}
+                    </View>
+                )}
+
+                {/* Approved Visitors Section - Ready to check in */}
+                {approvedCount > 0 && (
+                    <View style={styles.approvedSection}>
+                        <View style={styles.sectionHeader}>
+                            <View style={styles.sectionTitleContainer}>
+                                <Ionicons name="checkmark-circle" size={20} color="#22c55e" />
+                                <Text style={styles.sectionHeaderTitle}>Ready to Check In</Text>
+                            </View>
+                            <View style={[styles.badge, { backgroundColor: '#22c55e' }]}>
+                                <Text style={styles.badgeText}>{approvedCount}</Text>
+                            </View>
+                        </View>
+                        {approvedVisitors.map((visitor) => (
+                            <VisitorApprovalCard
+                                key={visitor.id}
+                                visitor={{
+                                    id: visitor.id,
+                                    visitor_name: visitor.visitor_name,
+                                    visitor_phone: visitor.visitor_phone,
+                                    unit_number: visitor.unit_number,
+                                    purpose: visitor.purpose,
+                                    status: visitor.status,
+                                    created_at: visitor.created_at,
+                                }}
+                                role="guard"
+                                onCheckIn={() => handleCheckIn(visitor.id)}
+                            />
+                        ))}
+                    </View>
+                )}
+
+                <SectionTitle>Today at Gate</SectionTitle>
+
+                <StatRow>
+                    <StatCard
+                        icon="people-outline"
+                        iconColor="#3b82f6"
+                        value={stats.visitorsToday}
+                        label="Visitors Today"
+                        backgroundColor="#dbeafe"
+                    />
+                    <StatCard
+                        icon="log-in-outline"
+                        iconColor="#10b981"
+                        value={stats.insideNow}
+                        label="Inside Now"
+                        backgroundColor="#d1fae5"
+                    />
+                </StatRow>
+
+                <StatRow>
+                    <StatCard
+                        icon="cube-outline"
+                        iconColor="#f59e0b"
+                        value={stats.pendingParcels}
+                        label="Pending Parcels"
+                        backgroundColor="#fef3c7"
+                    />
+                    <StatCard
+                        icon="alert-circle-outline"
+                        iconColor="#ef4444"
+                        value={stats.openIssues}
+                        label="Open Issues"
+                        backgroundColor="#fee2e2"
+                    />
+                </StatRow>
+
                 <SectionTitle>Quick Actions</SectionTitle>
 
                 <ActionButton
-                    icon="checkmark-circle"
+                    icon="person-add"
+                    iconSize={48}
+                    title="New Entry"
+                    subtitle="Log walk-in visitor"
+                    variant="primary"
+                    onPress={() => router.push('/(guard)/walk-in')}
+                />
+
+                <ActionButton
+                    icon="qr-code-outline"
                     iconSize={48}
                     title="Expected Visitor"
-                    subtitle="Scan QR code or verify OTP"
+                    subtitle="Verify pre-approved entry"
                     variant="success"
                     onPress={() => router.push('/(guard)/expected-visitor')}
                 />
@@ -118,25 +270,17 @@ export default function GuardHome() {
                 />
 
                 <ActionButton
-                    icon="person-add"
-                    iconSize={48}
-                    title="Walk-in Visitor"
-                    subtitle="Register new visitor"
-                    variant="primary"
-                    onPress={() => router.push('/(guard)/walk-in')}
-                />
-
-                <ActionButton
                     icon="cube"
                     iconSize={48}
                     title="Parcels"
                     subtitle="Log & track deliveries"
                     variant="warning"
+                    badge={stats.pendingParcels > 0 ? stats.pendingParcels : undefined}
                     onPress={() => router.push('/(guard)/parcels')}
                 />
 
                 <ActionButton
-                    icon="alert-circle"
+                    icon="warning"
                     iconSize={48}
                     title="Emergency Alert"
                     subtitle="Notify managers immediately"
@@ -144,29 +288,20 @@ export default function GuardHome() {
                     onPress={handleEmergency}
                 />
 
-                <SectionTitle>Today's Activity</SectionTitle>
+                <SectionTitle>Recent Activity</SectionTitle>
 
-                <StatRow>
-                    <StatCard
-                        icon="people-outline"
-                        iconColor="#3b82f6"
-                        value={stats.visitorsToday}
-                        label="Visitors Today"
-                        backgroundColor="#dbeafe"
-                    />
-                    <StatCard
-                        icon="log-in-outline"
-                        iconColor="#10b981"
-                        value={stats.currentlyInside}
-                        label="Currently Inside"
-                        backgroundColor="#d1fae5"
-                    />
-                </StatRow>
+                <ActivityFeed
+                    activities={activities}
+                    maxItems={5}
+                    isLoading={activitiesLoading && !refreshing}
+                />
 
-                <SecondaryAction
-                    icon="time-outline"
-                    label="View Visitor History"
-                    onPress={() => router.push('/(guard)/checkout')}
+                <ShiftControls
+                    isShiftActive={isShiftActive}
+                    shiftStartTime={shiftStartTime}
+                    onStartShift={handleStartShift}
+                    onEndShift={handleEndShift}
+                    isLoading={shiftLoading}
                 />
 
                 <View style={styles.spacer} />
@@ -183,6 +318,39 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         paddingHorizontal: 20,
+    },
+    pendingSection: {
+        marginBottom: 16,
+        marginTop: 8,
+    },
+    approvedSection: {
+        marginBottom: 16,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    sectionTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    sectionHeaderTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1e293b',
+    },
+    badge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    badgeText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#fff',
     },
     spacer: {
         height: 40,

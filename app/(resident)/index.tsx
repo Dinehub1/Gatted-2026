@@ -6,11 +6,14 @@ import {
     StatCard,
     StatRow,
 } from '@/components/shared';
+import { VisitorApprovalCard } from '@/components/shared/VisitorApprovalCard';
 import { useAuth } from '@/contexts/auth-context';
+import { useVisitorApproval } from '@/hooks/useVisitorApproval';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 type VisitorSummary = {
     upcoming: number;
@@ -30,6 +33,21 @@ export default function ResidentHome() {
     const [issueSummary, setIssueSummary] = useState<IssueSummary>({ open: 0, total: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+
+    // Use unified visitor approval hook
+    const {
+        pendingVisitors,
+        pendingCount,
+        approve,
+        deny,
+        refresh: refreshVisitors,
+        isLoading: visitorsLoading,
+    } = useVisitorApproval({
+        societyId: currentRole?.society_id,
+        userId: profile?.id,
+        unitId: currentRole?.unit_id,
+        role: 'resident',
+    });
 
     const loadData = async () => {
         try {
@@ -80,12 +98,41 @@ export default function ResidentHome() {
         loadData();
     }, [profile?.id]);
 
+    // Refresh data when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            loadData();
+            refreshVisitors();
+        }, [profile?.id, currentRole?.society_id])
+    );
+
     const onRefresh = () => {
         setRefreshing(true);
         loadData();
+        refreshVisitors();
     };
 
-    if (isLoading) {
+    const handleApprove = async (visitorId: string) => {
+        const success = await approve(visitorId);
+        if (success) {
+            Alert.alert('✅ Approved', 'Visitor has been approved for entry. The guard will be notified.');
+        } else {
+            Alert.alert('Error', 'Failed to approve visitor. Please try again.');
+        }
+        return success;
+    };
+
+    const handleDeny = async (visitorId: string) => {
+        const success = await deny(visitorId);
+        if (success) {
+            Alert.alert('Entry Denied', 'Visitor entry has been denied. The guard will be notified.');
+        } else {
+            Alert.alert('Error', 'Failed to deny visitor. Please try again.');
+        }
+        return success;
+    };
+
+    if (isLoading && visitorsLoading) {
         return <LoadingSpinner />;
     }
 
@@ -97,7 +144,7 @@ export default function ResidentHome() {
                 subtitle={`Unit: ${currentRole?.unit?.unit_number || 'N/A'}`}
                 secondaryRightAction={{
                     icon: 'notifications-outline',
-                    color: '#64748b',
+                    color: pendingCount > 0 ? '#f59e0b' : '#64748b',
                     onPress: () => router.push('/(resident)/notifications'),
                 }}
                 rightAction={{
@@ -114,13 +161,45 @@ export default function ResidentHome() {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />
                 }
             >
+                {/* Pending Approvals Section */}
+                {pendingCount > 0 && (
+                    <View style={styles.pendingSection}>
+                        <View style={styles.pendingSectionHeader}>
+                            <View style={styles.pendingTitleContainer}>
+                                <Ionicons name="hourglass-outline" size={20} color="#f59e0b" />
+                                <Text style={styles.pendingSectionTitle}>Pending Approvals</Text>
+                            </View>
+                            <View style={styles.pendingBadge}>
+                                <Text style={styles.pendingBadgeText}>{pendingCount}</Text>
+                            </View>
+                        </View>
+                        {pendingVisitors.map((visitor) => (
+                            <VisitorApprovalCard
+                                key={visitor.id}
+                                visitor={{
+                                    id: visitor.id,
+                                    visitor_name: visitor.visitor_name,
+                                    visitor_phone: visitor.visitor_phone,
+                                    unit_number: visitor.unit_number,
+                                    purpose: visitor.purpose,
+                                    status: visitor.status,
+                                    created_at: visitor.created_at,
+                                }}
+                                role="resident"
+                                onApprove={() => handleApprove(visitor.id)}
+                                onDeny={() => handleDeny(visitor.id)}
+                            />
+                        ))}
+                    </View>
+                )}
+
                 <SectionTitle>Overview</SectionTitle>
 
                 <StatRow>
                     <StatCard
                         icon="people-outline"
                         iconColor="#3b82f6"
-                        value={visitorSummary.upcoming}
+                        value={visitorSummary.upcoming + pendingCount}
                         label="Upcoming"
                         backgroundColor="#dbeafe"
                     />
@@ -213,10 +292,36 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 20,
     },
-    emptyText: {
-        fontSize: 14,
-        color: '#94a3b8',
-        textAlign: 'center',
+    pendingSection: {
+        marginBottom: 16,
+        marginTop: 8,
+    },
+    pendingSectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    pendingTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    pendingSectionTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1e293b',
+    },
+    pendingBadge: {
+        backgroundColor: '#f59e0b',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    pendingBadgeText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#fff',
     },
     spacer: {
         height: 40,

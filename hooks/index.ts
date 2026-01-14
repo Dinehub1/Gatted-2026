@@ -1,4 +1,7 @@
 // Data fetching hooks
+export { useActivityFeed } from './useActivityFeed';
+export { useGuardDashboard, type GuardDashboardStats } from './useGuardDashboard';
+export { useGuardShift } from './useGuardShift';
 export { useIssueStats } from './useIssueStats';
 export { useNotifications, type Notification } from './useNotifications';
 export { useProfile } from './useProfile';
