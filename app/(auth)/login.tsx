@@ -2,10 +2,9 @@ import { Branding } from '@/constants/branding';
 import { useAuth } from '@/contexts/auth-context';
 import { useAuthStore } from '@/stores/auth.store';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
     const [phone, setPhone] = useState('');
@@ -71,12 +70,11 @@ export default function LoginScreen() {
             <View style={styles.content}>
                 {/* Logo Section */}
                 <View style={styles.logoContainer}>
-                    <LinearGradient
-                        colors={Branding.colors.gradient}
-                        style={styles.logoBackground}
-                    >
-                        <Ionicons name="shield-checkmark" size={48} color="#fff" />
-                    </LinearGradient>
+                    <Image
+                        source={Branding.assets.icon}
+                        style={styles.logoImage}
+                        resizeMode="contain"
+                    />
                     <Text style={styles.logoText}>{Branding.appName}</Text>
                     <Text style={styles.tagline}>{Branding.tagline}</Text>
                 </View>
@@ -235,18 +233,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 32,
     },
-    logoBackground: {
-        width: 88,
-        height: 88,
+    logoImage: {
+        width: 100,
+        height: 100,
         borderRadius: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
         marginBottom: 16,
-        shadowColor: '#2563eb',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 8,
     },
     logoText: {
         fontSize: 28,
