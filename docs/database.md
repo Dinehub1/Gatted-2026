@@ -262,8 +262,8 @@ Visitor tracking and gate pass management.
 | `otp` | varchar(6) | YES | Auto-generated |
 | `otp_expires_at` | timestamptz | YES | - |
 | `qr_code` | text | YES | - |
-| `check_in_time` | timestamptz | YES | - |
-| `check_out_time` | timestamptz | YES | - |
+| `checked_in_at` | timestamptz | YES | - |
+| `checked_out_at` | timestamptz | YES | - |
 | `checked_in_by` | uuid | YES | FK → profiles |
 | `checked_out_by` | uuid | YES | FK → profiles |
 | `check_in_photo_url` | text | YES | - |

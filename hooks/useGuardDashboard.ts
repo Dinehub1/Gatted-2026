@@ -35,14 +35,14 @@ export function useGuardDashboard({ societyId }: UseGuardDashboardOptions) {
             // Fetch visitors
             const { data: visitors, error: visitorsError } = await supabase
                 .from('visitors')
-                .select('id, status, expected_date, check_in_time')
+                .select('id, status, expected_date, checked_in_at')
                 .eq('society_id', societyId);
 
             if (visitorsError) throw visitorsError;
 
             const visitorsToday = visitors?.filter(v =>
                 v.expected_date === today ||
-                (v.check_in_time && v.check_in_time.startsWith(today))
+                (v.checked_in_at && v.checked_in_at.startsWith(today))
             ).length || 0;
 
             const insideNow = visitors?.filter(v => v.status === 'checked-in').length || 0;

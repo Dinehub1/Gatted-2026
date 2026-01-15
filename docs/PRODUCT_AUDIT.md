@@ -277,7 +277,7 @@ supabaseHelpers.getExpectedVisitors(societyId, today)
 - Validates visitor exists
 - Validates OTP if provided
 - Sets `status = 'checked-in'`
-- Records `check_in_time`, `checked_in_by`
+- Records `checked_in_at`, `checked_in_by`
 - **Security:** `SECURITY DEFINER` with `search_path = public`
 
 #### Database Interaction

@@ -13,8 +13,8 @@ type Visitor = {
     status: string;
     expected_date: string | null;
     expected_time?: string | null;
-    check_in_time?: string | null;
-    check_out_time?: string | null;
+    checked_in_at?: string | null;
+    checked_out_at?: string | null;
     unit?: {
         unit_number: string;
     } | null;
@@ -41,8 +41,8 @@ export default function VisitorsScreen() {
                     status,
                     expected_date,
                     expected_time,
-                    check_in_time,
-                    check_out_time,
+                    checked_in_at,
+                    checked_out_at,
                     unit:units(unit_number)
                 `)
                 .eq('society_id', societyId)

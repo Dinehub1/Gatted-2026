@@ -178,7 +178,7 @@ export function useVisitorApproval({ societyId, userId, unitId, role }: UseVisit
                 .from('visitors')
                 .update({
                     status: 'checked-out',
-                    check_out_time: new Date().toISOString(),
+                    checked_out_at: new Date().toISOString(),
                     checked_out_by: guardId,
                     updated_at: new Date().toISOString(),
                 })
