@@ -1,6 +1,6 @@
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { NotificationItem, PageHeader, SectionTitle } from '@/components/shared';
+import { NotificationItem, PageHeader, SectionTitle } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { useNotifications } from '@/hooks/useNotifications';
 import React, { useState } from 'react';

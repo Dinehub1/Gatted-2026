@@ -1,7 +1,7 @@
+import { PageHeader } from '@/components';
 import { Card, StatusBadge } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { PageHeader } from '@/components/shared';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
@@ -93,32 +93,34 @@ export default function MyIssuesScreen() {
         const status = statusConfig[item.status] || statusConfig.open;
 
         return (
-            <Card style={styles.issueCard}>
-                <View style={styles.issueHeader}>
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.issueTitle} numberOfLines={1}>
-                            {item.title}
-                        </Text>
-                        <Text style={styles.category}>{item.category}</Text>
+            <View style={styles.issueCard}>
+                <Card>
+                    <View style={styles.issueHeader}>
+                        <View style={styles.titleContainer}>
+                            <Text style={styles.issueTitle} numberOfLines={1}>
+                                {item.title}
+                            </Text>
+                            <Text style={styles.category}>{item.category}</Text>
+                        </View>
+                        <StatusBadge status={item.status} />
                     </View>
-                    <StatusBadge status={item.status} />
-                </View>
 
-                {item.description && (
-                    <Text style={styles.description} numberOfLines={2}>
-                        {item.description}
-                    </Text>
-                )}
-
-                <View style={styles.footer}>
-                    <View style={[styles.priorityBadge, { backgroundColor: priority.bg }]}>
-                        <Text style={[styles.priorityText, { color: priority.color }]}>
-                            {priority.label}
+                    {item.description && (
+                        <Text style={styles.description} numberOfLines={2}>
+                            {item.description}
                         </Text>
+                    )}
+
+                    <View style={styles.footer}>
+                        <View style={[styles.priorityBadge, { backgroundColor: priority.bg }]}>
+                            <Text style={[styles.priorityText, { color: priority.color }]}>
+                                {priority.label}
+                            </Text>
+                        </View>
+                        <Text style={styles.date}>{formatDate(item.created_at)}</Text>
                     </View>
-                    <Text style={styles.date}>{formatDate(item.created_at)}</Text>
-                </View>
-            </Card>
+                </Card>
+            </View>
         );
     };
 

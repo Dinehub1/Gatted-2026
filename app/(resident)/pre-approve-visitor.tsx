@@ -1,4 +1,4 @@
-import { DateInput } from '@/components/shared/DateInput';
+import { DateInput } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,10 +33,6 @@ export default function PreApproveVisitor() {
     const [isLoading, setIsLoading] = useState(false);
     const [generatedOTP, setGeneratedOTP] = useState<string | null>(null);
     const [visitorData, setVisitorData] = useState<any>(null);
-
-    const generateOTP = () => {
-        return Math.floor(100000 + Math.random() * 900000).toString();
-    };
 
     const handleSubmit = async () => {
         // Validation
@@ -78,7 +74,7 @@ export default function PreApproveVisitor() {
 
             const { data, error } = await supabase
                 .from('visitors')
-                .insert(visitorRecord)
+                .insert(visitorRecord as any)
                 .select()
                 .single();
 

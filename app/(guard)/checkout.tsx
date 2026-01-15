@@ -1,4 +1,4 @@
-import { PageHeader } from '@/components/shared';
+import { PageHeader } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';

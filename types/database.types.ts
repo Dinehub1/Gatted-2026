@@ -6,32 +6,27 @@ export type Json =
     | { [key: string]: Json | undefined }
     | Json[]
 
-export type Database = {
-    // Allows to automatically instantiate createClient with right options
-    // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-    __InternalSupabase: {
-        PostgrestVersion: "14.1"
-    }
+export interface Database {
     public: {
         Tables: {
             announcement_reads: {
                 Row: {
-                    announcement_id: string | null
                     id: string
-                    read_at: string | null
+                    announcement_id: string | null
                     user_id: string | null
+                    read_at: string | null
                 }
                 Insert: {
-                    announcement_id?: string | null
                     id?: string
-                    read_at?: string | null
+                    announcement_id?: string | null
                     user_id?: string | null
+                    read_at?: string | null
                 }
                 Update: {
-                    announcement_id?: string | null
                     id?: string
-                    read_at?: string | null
+                    announcement_id?: string | null
                     user_id?: string | null
+                    read_at?: string | null
                 }
                 Relationships: [
                     {
@@ -47,51 +42,57 @@ export type Database = {
                         isOneToOne: false
                         referencedRelation: "profiles"
                         referencedColumns: ["id"]
-                    },
+                    }
                 ]
             }
             announcements: {
                 Row: {
-                    attachments: string[] | null
-                    created_at: string | null
-                    created_by: string | null
-                    expires_at: string | null
                     id: string
-                    message: string
                     society_id: string | null
-                    target_block_id: string | null
-                    target_role: Database["public"]["Enums"]["user_role"] | null
-                    target_type: Database["public"]["Enums"]["announcement_target"] | null
-                    target_unit_id: string | null
+                    created_by: string | null
                     title: string
+                    message: string
+                    attachments: string[] | null
+                    target_type: Database["public"]["Enums"]["announcement_target"] | null
+                    target_block_id: string | null
+                    target_unit_id: string | null
+                    priority: string | null
+                    is_active: boolean | null
+                    expires_at: string | null
+                    created_at: string | null
+                    updated_at: string | null
                 }
                 Insert: {
-                    attachments?: string[] | null
-                    created_at?: string | null
-                    created_by?: string | null
-                    expires_at?: string | null
                     id?: string
-                    message: string
                     society_id?: string | null
-                    target_block_id?: string | null
-                    target_role?: Database["public"]["Enums"]["user_role"] | null
-                    target_type?: Database["public"]["Enums"]["announcement_target"] | null
-                    target_unit_id?: string | null
+                    created_by?: string | null
                     title: string
+                    message: string
+                    attachments?: string[] | null
+                    target_type?: Database["public"]["Enums"]["announcement_target"] | null
+                    target_block_id?: string | null
+                    target_unit_id?: string | null
+                    priority?: string | null
+                    is_active?: boolean | null
+                    expires_at?: string | null
+                    created_at?: string | null
+                    updated_at?: string | null
                 }
                 Update: {
-                    attachments?: string[] | null
-                    created_at?: string | null
-                    created_by?: string | null
-                    expires_at?: string | null
                     id?: string
-                    message?: string
                     society_id?: string | null
-                    target_block_id?: string | null
-                    target_role?: Database["public"]["Enums"]["user_role"] | null
-                    target_type?: Database["public"]["Enums"]["announcement_target"] | null
-                    target_unit_id?: string | null
+                    created_by?: string | null
                     title?: string
+                    message?: string
+                    attachments?: string[] | null
+                    target_type?: Database["public"]["Enums"]["announcement_target"] | null
+                    target_block_id?: string | null
+                    target_unit_id?: string | null
+                    priority?: string | null
+                    is_active?: boolean | null
+                    expires_at?: string | null
+                    created_at?: string | null
+                    updated_at?: string | null
                 }
                 Relationships: [
                     {
@@ -121,68 +122,87 @@ export type Database = {
                         isOneToOne: false
                         referencedRelation: "units"
                         referencedColumns: ["id"]
-                    },
+                    }
                 ]
             }
             blocks: {
                 Row: {
-                    created_at: string | null
                     id: string
-                    name: string
                     society_id: string | null
+                    name: string
+                    manager_id: string | null
                     total_floors: number | null
+                    total_units: number | null
+                    created_at: string | null
                     updated_at: string | null
                 }
                 Insert: {
-                    created_at?: string | null
                     id?: string
-                    name: string
                     society_id?: string | null
+                    name: string
+                    manager_id?: string | null
                     total_floors?: number | null
+                    total_units?: number | null
+                    created_at?: string | null
                     updated_at?: string | null
                 }
                 Update: {
-                    created_at?: string | null
                     id?: string
-                    name?: string
                     society_id?: string | null
+                    name?: string
+                    manager_id?: string | null
                     total_floors?: number | null
+                    total_units?: number | null
+                    created_at?: string | null
                     updated_at?: string | null
                 }
                 Relationships: [
+                    {
+                        foreignKeyName: "blocks_manager_id_fkey"
+                        columns: ["manager_id"]
+                        isOneToOne: false
+                        referencedRelation: "profiles"
+                        referencedColumns: ["id"]
+                    },
                     {
                         foreignKeyName: "blocks_society_id_fkey"
                         columns: ["society_id"]
                         isOneToOne: false
                         referencedRelation: "societies"
                         referencedColumns: ["id"]
-                    },
+                    }
                 ]
             }
             guard_shifts: {
                 Row: {
-                    created_at: string | null
-                    guard_id: string | null
                     id: string
-                    shift_end: string | null
-                    shift_start: string | null
                     society_id: string | null
+                    guard_id: string | null
+                    shift_start: string
+                    shift_end: string | null
+                    handover_notes: string | null
+                    handed_over_to: string | null
+                    created_at: string | null
                 }
                 Insert: {
-                    created_at?: string | null
-                    guard_id?: string | null
                     id?: string
-                    shift_end?: string | null
-                    shift_start?: string | null
                     society_id?: string | null
+                    guard_id?: string | null
+                    shift_start: string
+                    shift_end?: string | null
+                    handover_notes?: string | null
+                    handed_over_to?: string | null
+                    created_at?: string | null
                 }
                 Update: {
-                    created_at?: string | null
-                    guard_id?: string | null
                     id?: string
-                    shift_end?: string | null
-                    shift_start?: string | null
                     society_id?: string | null
+                    guard_id?: string | null
+                    shift_start?: string
+                    shift_end?: string | null
+                    handover_notes?: string | null
+                    handed_over_to?: string | null
+                    created_at?: string | null
                 }
                 Relationships: [
                     {
@@ -193,38 +213,48 @@ export type Database = {
                         referencedColumns: ["id"]
                     },
                     {
+                        foreignKeyName: "guard_shifts_handed_over_to_fkey"
+                        columns: ["handed_over_to"]
+                        isOneToOne: false
+                        referencedRelation: "profiles"
+                        referencedColumns: ["id"]
+                    },
+                    {
                         foreignKeyName: "guard_shifts_society_id_fkey"
                         columns: ["society_id"]
                         isOneToOne: false
                         referencedRelation: "societies"
                         referencedColumns: ["id"]
-                    },
+                    }
                 ]
             }
             issue_updates: {
                 Row: {
-                    comment: string | null
-                    created_at: string | null
                     id: string
-                    issue_id: string | null
-                    status_changed_to: Database["public"]["Enums"]["issue_status"] | null
-                    updated_by: string | null
+                    issue_id: string
+                    user_id: string
+                    comment: string | null
+                    new_status: Database["public"]["Enums"]["issue_status"] | null
+                    photos: string[] | null
+                    created_at: string | null
                 }
                 Insert: {
-                    comment?: string | null
-                    created_at?: string | null
                     id?: string
-                    issue_id?: string | null
-                    status_changed_to?: Database["public"]["Enums"]["issue_status"] | null
-                    updated_by?: string | null
+                    issue_id: string
+                    user_id: string
+                    comment?: string | null
+                    new_status?: Database["public"]["Enums"]["issue_status"] | null
+                    photos?: string[] | null
+                    created_at?: string | null
                 }
                 Update: {
-                    comment?: string | null
-                    created_at?: string | null
                     id?: string
-                    issue_id?: string | null
-                    status_changed_to?: Database["public"]["Enums"]["issue_status"] | null
-                    updated_by?: string | null
+                    issue_id?: string
+                    user_id?: string
+                    comment?: string | null
+                    new_status?: Database["public"]["Enums"]["issue_status"] | null
+                    photos?: string[] | null
+                    created_at?: string | null
                 }
                 Relationships: [
                     {
@@ -235,70 +265,58 @@ export type Database = {
                         referencedColumns: ["id"]
                     },
                     {
-                        foreignKeyName: "issue_updates_updated_by_fkey"
-                        columns: ["updated_by"]
+                        foreignKeyName: "issue_updates_user_id_fkey"
+                        columns: ["user_id"]
                         isOneToOne: false
                         referencedRelation: "profiles"
                         referencedColumns: ["id"]
-                    },
+                    }
                 ]
             }
             issues: {
                 Row: {
-                    assigned_at: string | null
-                    assigned_to: string | null
-                    category: Database["public"]["Enums"]["issue_category"]
-                    created_at: string | null
-                    description: string | null
                     id: string
-                    photos: string[] | null
-                    priority: Database["public"]["Enums"]["issue_priority"]
-                    reported_by: string | null
-                    resolution_notes: string | null
-                    resolved_at: string | null
-                    resolved_by: string | null
                     society_id: string | null
-                    status: Database["public"]["Enums"]["issue_status"]
-                    title: string
                     unit_id: string | null
+                    reported_by: string | null
+                    assigned_to: string | null
+                    title: string
+                    description: string | null
+                    category: Database["public"]["Enums"]["issue_category"]
+                    priority: Database["public"]["Enums"]["issue_priority"]
+                    status: Database["public"]["Enums"]["issue_status"]
+                    photos: string[] | null
+                    created_at: string | null
                     updated_at: string | null
                 }
                 Insert: {
-                    assigned_at?: string | null
-                    assigned_to?: string | null
-                    category: Database["public"]["Enums"]["issue_category"]
-                    created_at?: string | null
-                    description?: string | null
                     id?: string
-                    photos?: string[] | null
-                    priority?: Database["public"]["Enums"]["issue_priority"]
-                    reported_by?: string | null
-                    resolution_notes?: string | null
-                    resolved_at?: string | null
-                    resolved_by?: string | null
                     society_id?: string | null
-                    status?: Database["public"]["Enums"]["issue_status"]
-                    title: string
                     unit_id?: string | null
+                    reported_by?: string | null
+                    assigned_to?: string | null
+                    title: string
+                    description?: string | null
+                    category: Database["public"]["Enums"]["issue_category"]
+                    priority?: Database["public"]["Enums"]["issue_priority"]
+                    status?: Database["public"]["Enums"]["issue_status"]
+                    photos?: string[] | null
+                    created_at?: string | null
                     updated_at?: string | null
                 }
                 Update: {
-                    assigned_at?: string | null
-                    assigned_to?: string | null
-                    category?: Database["public"]["Enums"]["issue_category"]
-                    created_at?: string | null
-                    description?: string | null
                     id?: string
-                    photos?: string[] | null
-                    priority?: Database["public"]["Enums"]["issue_priority"]
-                    reported_by?: string | null
-                    resolution_notes?: string | null
-                    resolved_at?: string | null
-                    resolved_by?: string | null
                     society_id?: string | null
-                    status?: Database["public"]["Enums"]["issue_status"]
-                    title?: string
                     unit_id?: string | null
+                    reported_by?: string | null
+                    assigned_to?: string | null
+                    title?: string
+                    description?: string | null
+                    category?: Database["public"]["Enums"]["issue_category"]
+                    priority?: Database["public"]["Enums"]["issue_priority"]
+                    status?: Database["public"]["Enums"]["issue_status"]
+                    photos?: string[] | null
+                    created_at?: string | null
                     updated_at?: string | null
                 }
                 Relationships: [
@@ -317,13 +335,6 @@ export type Database = {
                         referencedColumns: ["id"]
                     },
                     {
-                        foreignKeyName: "issues_resolved_by_fkey"
-                        columns: ["resolved_by"]
-                        isOneToOne: false
-                        referencedRelation: "profiles"
-                        referencedColumns: ["id"]
-                    },
-                    {
                         foreignKeyName: "issues_society_id_fkey"
                         columns: ["society_id"]
                         isOneToOne: false
@@ -336,98 +347,117 @@ export type Database = {
                         isOneToOne: false
                         referencedRelation: "units"
                         referencedColumns: ["id"]
-                    },
+                    }
                 ]
             }
             notifications: {
                 Row: {
-                    created_at: string | null
                     id: string
-                    message: string
-                    metadata: Json | null
-                    read: boolean | null
+                    user_id: string
                     title: string
-                    type: string | null
-                    user_id: string | null
+                    message: string
+                    type: string
+                    read: boolean
+                    metadata: Json | null
+                    society_id: string | null
+                    expires_at: string | null
+                    created_at: string
+                    updated_at: string
                 }
                 Insert: {
-                    created_at?: string | null
                     id?: string
-                    message: string
-                    metadata?: Json | null
-                    read?: boolean | null
+                    user_id: string
                     title: string
-                    type?: string | null
-                    user_id?: string | null
+                    message: string
+                    type: string
+                    read?: boolean
+                    metadata?: Json | null
+                    society_id?: string | null
+                    expires_at?: string | null
+                    created_at?: string
+                    updated_at?: string
                 }
                 Update: {
-                    created_at?: string | null
                     id?: string
-                    message?: string
-                    metadata?: Json | null
-                    read?: boolean | null
+                    user_id?: string
                     title?: string
-                    type?: string | null
-                    user_id?: string | null
+                    message?: string
+                    type?: string
+                    read?: boolean
+                    metadata?: Json | null
+                    society_id?: string | null
+                    expires_at?: string | null
+                    created_at?: string
+                    updated_at?: string
                 }
                 Relationships: [
+                    {
+                        foreignKeyName: "notifications_society_id_fkey"
+                        columns: ["society_id"]
+                        isOneToOne: false
+                        referencedRelation: "societies"
+                        referencedColumns: ["id"]
+                    },
                     {
                         foreignKeyName: "notifications_user_id_fkey"
                         columns: ["user_id"]
                         isOneToOne: false
                         referencedRelation: "profiles"
                         referencedColumns: ["id"]
-                    },
+                    }
                 ]
             }
             parcels: {
                 Row: {
-                    collected_at: string | null
-                    collected_by: string | null
-                    courier_name: string | null
-                    created_at: string | null
-                    description: string | null
                     id: string
-                    received_at: string | null
-                    received_by: string | null
+                    society_id: string
+                    unit_id: string
                     resident_id: string | null
-                    society_id: string | null
-                    status: string | null
+                    courier_name: string | null
                     tracking_number: string | null
-                    unit_id: string | null
-                    updated_at: string | null
+                    description: string | null
+                    status: string
+                    received_by: string | null
+                    collected_by: string | null
+                    collected_at: string | null
+                    photo_url: string | null
+                    notes: string | null
+                    created_at: string
+                    updated_at: string
                 }
                 Insert: {
-                    collected_at?: string | null
-                    collected_by?: string | null
-                    courier_name?: string | null
-                    created_at?: string | null
-                    description?: string | null
                     id?: string
-                    received_at?: string | null
-                    received_by?: string | null
+                    society_id: string
+                    unit_id: string
                     resident_id?: string | null
-                    society_id?: string | null
-                    status?: string | null
+                    courier_name?: string | null
                     tracking_number?: string | null
-                    unit_id?: string | null
-                    updated_at?: string | null
+                    description?: string | null
+                    status?: string
+                    received_by?: string | null
+                    collected_by?: string | null
+                    collected_at?: string | null
+                    photo_url?: string | null
+                    notes?: string | null
+                    created_at?: string
+                    updated_at?: string
                 }
                 Update: {
-                    collected_at?: string | null
-                    collected_by?: string | null
-                    courier_name?: string | null
-                    created_at?: string | null
-                    description?: string | null
                     id?: string
-                    received_at?: string | null
-                    received_by?: string | null
+                    society_id?: string
+                    unit_id?: string
                     resident_id?: string | null
-                    society_id?: string | null
-                    status?: string | null
+                    courier_name?: string | null
                     tracking_number?: string | null
-                    unit_id?: string | null
-                    updated_at?: string | null
+                    description?: string | null
+                    status?: string
+                    received_by?: string | null
+                    collected_by?: string | null
+                    collected_at?: string | null
+                    photo_url?: string | null
+                    notes?: string | null
+                    created_at?: string
+                    updated_at?: string
                 }
                 Relationships: [
                     {
@@ -464,108 +494,160 @@ export type Database = {
                         isOneToOne: false
                         referencedRelation: "units"
                         referencedColumns: ["id"]
-                    },
+                    }
                 ]
             }
             profiles: {
                 Row: {
-                    avatar_url: string | null
-                    created_at: string | null
-                    email: string | null
-                    full_name: string | null
                     id: string
                     phone: string
+                    full_name: string | null
+                    email: string | null
+                    avatar_url: string | null
+                    created_at: string | null
                     updated_at: string | null
                 }
                 Insert: {
-                    avatar_url?: string | null
-                    created_at?: string | null
-                    email?: string | null
-                    full_name?: string | null
                     id: string
                     phone: string
+                    full_name?: string | null
+                    email?: string | null
+                    avatar_url?: string | null
+                    created_at?: string | null
                     updated_at?: string | null
                 }
                 Update: {
-                    avatar_url?: string | null
-                    created_at?: string | null
-                    email?: string | null
-                    full_name?: string | null
                     id?: string
                     phone?: string
+                    full_name?: string | null
+                    email?: string | null
+                    avatar_url?: string | null
+                    created_at?: string | null
                     updated_at?: string | null
                 }
-                Relationships: []
+                Relationships: [
+                    {
+                        foreignKeyName: "profiles_id_fkey"
+                        columns: ["id"]
+                        isOneToOne: true
+                        referencedRelation: "users"
+                        referencedColumns: ["id"]
+                    }
+                ]
+            }
+            push_tokens: {
+                Row: {
+                    id: string
+                    user_id: string
+                    token: string
+                    platform: string
+                    is_active: boolean | null
+                    created_at: string | null
+                    updated_at: string | null
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    token: string
+                    platform: string
+                    is_active?: boolean | null
+                    created_at?: string | null
+                    updated_at?: string | null
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    token?: string
+                    platform?: string
+                    is_active?: boolean | null
+                    created_at?: string | null
+                    updated_at?: string | null
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "push_tokens_user_id_fkey"
+                        columns: ["user_id"]
+                        isOneToOne: false
+                        referencedRelation: "profiles"
+                        referencedColumns: ["id"]
+                    }
+                ]
             }
             societies: {
                 Row: {
-                    address: string | null
-                    city: string | null
-                    created_at: string | null
                     id: string
                     name: string
-                    settings: Json | null
+                    address: string | null
+                    city: string | null
                     state: string | null
+                    zip_code: string | null
                     total_blocks: number | null
                     total_units: number | null
+                    settings: Json | null
+                    logo_url: string | null
+                    created_at: string | null
                     updated_at: string | null
-                    zip_code: string | null
                 }
                 Insert: {
-                    address?: string | null
-                    city?: string | null
-                    created_at?: string | null
                     id?: string
                     name: string
-                    settings?: Json | null
-                    state?: string | null
-                    total_blocks?: number | null
-                    total_units?: number | null
-                    updated_at?: string | null
-                    zip_code?: string | null
-                }
-                Update: {
                     address?: string | null
                     city?: string | null
-                    created_at?: string | null
-                    id?: string
-                    name?: string
-                    settings?: Json | null
                     state?: string | null
+                    zip_code?: string | null
                     total_blocks?: number | null
                     total_units?: number | null
+                    settings?: Json | null
+                    logo_url?: string | null
+                    created_at?: string | null
                     updated_at?: string | null
+                }
+                Update: {
+                    id?: string
+                    name?: string
+                    address?: string | null
+                    city?: string | null
+                    state?: string | null
                     zip_code?: string | null
+                    total_blocks?: number | null
+                    total_units?: number | null
+                    settings?: Json | null
+                    logo_url?: string | null
+                    created_at?: string | null
+                    updated_at?: string | null
                 }
                 Relationships: []
             }
             unit_residents: {
                 Row: {
-                    created_at: string | null
                     id: string
+                    unit_id: string
+                    user_id: string
+                    resident_type: string | null
                     is_primary: boolean | null
                     move_in_date: string | null
                     move_out_date: string | null
-                    unit_id: string | null
-                    user_id: string | null
+                    created_at: string | null
                 }
                 Insert: {
-                    created_at?: string | null
                     id?: string
+                    unit_id: string
+                    user_id: string
+                    resident_type?: string | null
                     is_primary?: boolean | null
                     move_in_date?: string | null
                     move_out_date?: string | null
-                    unit_id?: string | null
-                    user_id?: string | null
+                    created_at?: string | null
                 }
                 Update: {
-                    created_at?: string | null
                     id?: string
+                    unit_id?: string
+                    user_id?: string
+                    resident_type?: string | null
                     is_primary?: boolean | null
                     move_in_date?: string | null
                     move_out_date?: string | null
-                    unit_id?: string | null
-                    user_id?: string | null
+                    created_at?: string | null
                 }
                 Relationships: [
                     {
@@ -581,41 +663,44 @@ export type Database = {
                         isOneToOne: false
                         referencedRelation: "profiles"
                         referencedColumns: ["id"]
-                    },
+                    }
                 ]
             }
             units: {
                 Row: {
-                    area_sqft: number | null
-                    block_id: string | null
-                    created_at: string | null
-                    floor: number | null
                     id: string
                     society_id: string | null
+                    block_id: string | null
+                    owner_id: string | null
                     unit_number: string
+                    floor: number | null
+                    area_sqft: number | null
                     unit_type: string | null
+                    created_at: string | null
                     updated_at: string | null
                 }
                 Insert: {
-                    area_sqft?: number | null
-                    block_id?: string | null
-                    created_at?: string | null
-                    floor?: number | null
                     id?: string
                     society_id?: string | null
+                    block_id?: string | null
+                    owner_id?: string | null
                     unit_number: string
+                    floor?: number | null
+                    area_sqft?: number | null
                     unit_type?: string | null
+                    created_at?: string | null
                     updated_at?: string | null
                 }
                 Update: {
-                    area_sqft?: number | null
-                    block_id?: string | null
-                    created_at?: string | null
-                    floor?: number | null
                     id?: string
                     society_id?: string | null
+                    block_id?: string | null
+                    owner_id?: string | null
                     unit_number?: string
+                    floor?: number | null
+                    area_sqft?: number | null
                     unit_type?: string | null
+                    created_at?: string | null
                     updated_at?: string | null
                 }
                 Relationships: [
@@ -627,46 +712,63 @@ export type Database = {
                         referencedColumns: ["id"]
                     },
                     {
+                        foreignKeyName: "units_owner_id_fkey"
+                        columns: ["owner_id"]
+                        isOneToOne: false
+                        referencedRelation: "profiles"
+                        referencedColumns: ["id"]
+                    },
+                    {
                         foreignKeyName: "units_society_id_fkey"
                         columns: ["society_id"]
                         isOneToOne: false
                         referencedRelation: "societies"
                         referencedColumns: ["id"]
-                    },
+                    }
                 ]
             }
             user_roles: {
                 Row: {
-                    created_at: string | null
                     id: string
-                    is_active: boolean | null
-                    role: Database["public"]["Enums"]["user_role"]
-                    society_id: string | null
+                    user_id: string
+                    society_id: string
                     unit_id: string | null
+                    role: Database["public"]["Enums"]["user_role"]
+                    is_active: boolean | null
+                    assigned_by: string | null
+                    created_at: string | null
                     updated_at: string | null
-                    user_id: string | null
                 }
                 Insert: {
-                    created_at?: string | null
                     id?: string
-                    is_active?: boolean | null
-                    role: Database["public"]["Enums"]["user_role"]
-                    society_id?: string | null
+                    user_id: string
+                    society_id: string
                     unit_id?: string | null
+                    role: Database["public"]["Enums"]["user_role"]
+                    is_active?: boolean | null
+                    assigned_by?: string | null
+                    created_at?: string | null
                     updated_at?: string | null
-                    user_id?: string | null
                 }
                 Update: {
-                    created_at?: string | null
                     id?: string
-                    is_active?: boolean | null
-                    role?: Database["public"]["Enums"]["user_role"]
-                    society_id?: string | null
+                    user_id?: string
+                    society_id?: string
                     unit_id?: string | null
+                    role?: Database["public"]["Enums"]["user_role"]
+                    is_active?: boolean | null
+                    assigned_by?: string | null
+                    created_at?: string | null
                     updated_at?: string | null
-                    user_id?: string | null
                 }
                 Relationships: [
+                    {
+                        foreignKeyName: "user_roles_assigned_by_fkey"
+                        columns: ["assigned_by"]
+                        isOneToOne: false
+                        referencedRelation: "profiles"
+                        referencedColumns: ["id"]
+                    },
                     {
                         foreignKeyName: "user_roles_society_id_fkey"
                         columns: ["society_id"]
@@ -687,84 +789,102 @@ export type Database = {
                         isOneToOne: false
                         referencedRelation: "profiles"
                         referencedColumns: ["id"]
-                    },
+                    }
                 ]
             }
             visitors: {
                 Row: {
-                    checked_in_at: string | null
-                    checked_in_by: string | null
-                    checked_out_at: string | null
-                    checked_out_by: string | null
-                    created_at: string | null
-                    expected_date: string | null
-                    expected_time: string | null
-                    host_id: string | null
                     id: string
-                    notes: string | null
-                    otp: string | null
-                    otp_expires_at: string | null
-                    photo_url: string | null
-                    purpose: string | null
-                    society_id: string | null
-                    status: Database["public"]["Enums"]["visitor_status"]
+                    society_id: string
                     unit_id: string | null
-                    updated_at: string | null
-                    valid_until: string | null
-                    vehicle_number: string | null
+                    host_id: string
                     visitor_name: string
                     visitor_phone: string | null
-                    visitor_type: Database["public"]["Enums"]["visitor_type"]
+                    visitor_email: string | null
+                    vehicle_number: string | null
+                    visitor_type: Database["public"]["Enums"]["visitor_type"] | null
+                    status: Database["public"]["Enums"]["visitor_status"]
+                    expected_date: string | null
+                    expected_time: string | null
+                    purpose: string | null
+                    otp: string | null
+                    otp_expires_at: string | null
+                    qr_code: string | null
+                    check_in_time: string | null
+                    check_out_time: string | null
+                    checked_in_by: string | null
+                    checked_out_by: string | null
+                    check_in_photo_url: string | null
+                    is_recurring: boolean | null
+                    recurrence_pattern: string | null
+                    recurring_type: string | null
+                    valid_until: string | null
+                    visitor_count: number | null
+                    rejection_reason: string | null
+                    created_at: string | null
+                    updated_at: string | null
                 }
                 Insert: {
-                    checked_in_at?: string | null
-                    checked_in_by?: string | null
-                    checked_out_at?: string | null
-                    checked_out_by?: string | null
-                    created_at?: string | null
-                    expected_date?: string | null
-                    expected_time?: string | null
-                    host_id?: string | null
                     id?: string
-                    notes?: string | null
-                    otp?: string | null
-                    otp_expires_at?: string | null
-                    photo_url?: string | null
-                    purpose?: string | null
-                    society_id?: string | null
-                    status?: Database["public"]["Enums"]["visitor_status"]
+                    society_id: string
                     unit_id?: string | null
-                    updated_at?: string | null
-                    valid_until?: string | null
-                    vehicle_number?: string | null
+                    host_id: string
                     visitor_name: string
                     visitor_phone?: string | null
-                    visitor_type?: Database["public"]["Enums"]["visitor_type"]
-                }
-                Update: {
-                    checked_in_at?: string | null
-                    checked_in_by?: string | null
-                    checked_out_at?: string | null
-                    checked_out_by?: string | null
-                    created_at?: string | null
+                    visitor_email?: string | null
+                    vehicle_number?: string | null
+                    visitor_type?: Database["public"]["Enums"]["visitor_type"] | null
+                    status?: Database["public"]["Enums"]["visitor_status"]
                     expected_date?: string | null
                     expected_time?: string | null
-                    host_id?: string | null
-                    id?: string
-                    notes?: string | null
+                    purpose?: string | null
                     otp?: string | null
                     otp_expires_at?: string | null
-                    photo_url?: string | null
-                    purpose?: string | null
-                    society_id?: string | null
-                    status?: Database["public"]["Enums"]["visitor_status"]
-                    unit_id?: string | null
-                    updated_at?: string | null
+                    qr_code?: string | null
+                    check_in_time?: string | null
+                    check_out_time?: string | null
+                    checked_in_by?: string | null
+                    checked_out_by?: string | null
+                    check_in_photo_url?: string | null
+                    is_recurring?: boolean | null
+                    recurrence_pattern?: string | null
+                    recurring_type?: string | null
                     valid_until?: string | null
-                    vehicle_number?: string | null
+                    visitor_count?: number | null
+                    rejection_reason?: string | null
+                    created_at?: string | null
+                    updated_at?: string | null
+                }
+                Update: {
+                    id?: string
+                    society_id?: string
+                    unit_id?: string | null
+                    host_id?: string
                     visitor_name?: string
                     visitor_phone?: string | null
-                    visitor_type?: Database["public"]["Enums"]["visitor_type"]
+                    visitor_email?: string | null
+                    vehicle_number?: string | null
+                    visitor_type?: Database["public"]["Enums"]["visitor_type"] | null
+                    status?: Database["public"]["Enums"]["visitor_status"]
+                    expected_date?: string | null
+                    expected_time?: string | null
+                    purpose?: string | null
+                    otp?: string | null
+                    otp_expires_at?: string | null
+                    qr_code?: string | null
+                    check_in_time?: string | null
+                    check_out_time?: string | null
+                    checked_in_by?: string | null
+                    checked_out_by?: string | null
+                    check_in_photo_url?: string | null
+                    is_recurring?: boolean | null
+                    recurrence_pattern?: string | null
+                    recurring_type?: string | null
+                    valid_until?: string | null
+                    visitor_count?: number | null
+                    rejection_reason?: string | null
+                    created_at?: string | null
+                    updated_at?: string | null
                 }
                 Relationships: [
                     {
@@ -801,7 +921,7 @@ export type Database = {
                         isOneToOne: false
                         referencedRelation: "units"
                         referencedColumns: ["id"]
-                    },
+                    }
                 ]
             }
         }
@@ -824,43 +944,32 @@ export type Database = {
                 }
                 Returns: Json
             }
-            generate_visitor_otp: {
+            cleanup_expired_visitors: {
                 Args: Record<PropertyKey, never>
                 Returns: undefined
             }
             get_user_context: {
                 Args: {
-                    user_uuid: string
+                    user_uuid?: string
                 }
                 Returns: {
-                    society_id: string
-                    society_name: string
-                    role: Database["public"]["Enums"]["user_role"]
-                    unit_id: string
-                    unit_number: string
-                }[]
+                    user_id: string
+                    roles: Json
+                    societies: Json
+                }
+            }
+            is_admin: {
+                Args: Record<PropertyKey, never>
+                Returns: boolean
             }
         }
         Enums: {
             announcement_target: "all" | "block" | "unit" | "role"
-            issue_category:
-            | "plumbing"
-            | "electrical"
-            | "cleaning"
-            | "security"
-            | "maintenance"
-            | "parking"
-            | "noise"
-            | "other"
+            issue_category: "plumbing" | "electrical" | "cleaning" | "security" | "maintenance" | "parking" | "noise" | "other"
             issue_priority: "low" | "medium" | "high" | "urgent"
             issue_status: "open" | "in-progress" | "resolved" | "closed" | "rejected"
             user_role: "admin" | "manager" | "guard" | "resident" | "owner" | "tenant"
-            visitor_status:
-            | "pending"
-            | "approved"
-            | "checked-in"
-            | "checked-out"
-            | "denied"
+            visitor_status: "pending" | "approved" | "checked-in" | "checked-out" | "denied"
             visitor_type: "expected" | "walk-in" | "delivery" | "service" | "guest"
         }
         CompositeTypes: {
@@ -869,30 +978,25 @@ export type Database = {
     }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof DatabaseWithoutInternals, "public">]
-
 export type Tables<
-    DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-    TableName extends DefaultSchemaTableNameOrOptions extends {
-        schema: keyof DatabaseWithoutInternals
-    }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
-    ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    PublicTableNameOrOptions extends
+    | keyof (Database["public"]["Tables"] & Database["public"]["Views"])
+    | { schema: keyof Database },
+    TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
+    : never = never
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+    ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
             Row: infer R
         }
     ? R
     : never
-    : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+    : PublicTableNameOrOptions extends keyof (Database["public"]["Tables"] &
+        Database["public"]["Views"])
+    ? (Database["public"]["Tables"] &
+        Database["public"]["Views"])[PublicTableNameOrOptions] extends {
             Row: infer R
         }
     ? R
@@ -900,22 +1004,20 @@ export type Tables<
     : never
 
 export type TablesInsert<
-    DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-    TableName extends DefaultSchemaTableNameOrOptions extends {
-        schema: keyof DatabaseWithoutInternals
-    }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
-    ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+    PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
+    TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+    ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
         Insert: infer I
     }
     ? I
     : never
-    : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+    ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
     }
     ? I
@@ -923,22 +1025,20 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-    DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-    TableName extends DefaultSchemaTableNameOrOptions extends {
-        schema: keyof DatabaseWithoutInternals
-    }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
-    ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+    PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
+    TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+    ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
         Update: infer U
     }
     ? U
     : never
-    : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+    ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
     }
     ? U
@@ -946,60 +1046,14 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-    DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-    EnumName extends DefaultSchemaEnumNameOrOptions extends {
-        schema: keyof DatabaseWithoutInternals
-    }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
-    ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-    : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    PublicEnumNameOrOptions extends
+    | keyof Database["public"]["Enums"]
+    | { schema: keyof Database },
+    EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+    : never = never
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+    : PublicEnumNameOrOptions extends keyof Database["public"]["Enums"]
+    ? Database["public"]["Enums"][PublicEnumNameOrOptions]
     : never
-
-export type CompositeTypes<
-    PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-    CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-        schema: keyof DatabaseWithoutInternals
-    }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
-    ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-    : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-    public: {
-        Enums: {
-            announcement_target: ["all", "block", "unit", "role"],
-            issue_category: [
-                "plumbing",
-                "electrical",
-                "cleaning",
-                "security",
-                "maintenance",
-                "parking",
-                "noise",
-                "other",
-            ],
-            issue_priority: ["low", "medium", "high", "urgent"],
-            issue_status: ["open", "in-progress", "resolved", "closed", "rejected"],
-            user_role: ["admin", "manager", "guard", "resident", "owner", "tenant"],
-            visitor_status: [
-                "pending",
-                "approved",
-                "checked-in",
-                "checked-out",
-                "denied",
-            ],
-            visitor_type: ["expected", "walk-in", "delivery", "service", "guest"],
-        },
-    },
-} as const

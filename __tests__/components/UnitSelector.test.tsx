@@ -1,4 +1,4 @@
-import { UnitSelector } from '@/components/shared/UnitSelector';
+import { UnitSelector } from '@/components';
 import { supabase } from '@/lib/supabase';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 

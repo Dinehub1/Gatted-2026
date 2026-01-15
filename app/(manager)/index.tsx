@@ -6,7 +6,7 @@ import {
     SectionTitle,
     StatCard,
     StatRow,
-} from '@/components/shared';
+} from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';

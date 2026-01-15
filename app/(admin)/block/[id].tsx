@@ -1,4 +1,4 @@
-import { PageHeader, SectionTitle } from '@/components/shared';
+import { PageHeader, SectionTitle } from '@/components';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';

@@ -35,24 +35,24 @@ export function useGuardDashboard({ societyId }: UseGuardDashboardOptions) {
             // Fetch visitors
             const { data: visitors, error: visitorsError } = await supabase
                 .from('visitors')
-                .select('id, status, expected_date, checked_in_at')
+                .select('id, status, expected_date, check_in_time')
                 .eq('society_id', societyId);
 
             if (visitorsError) throw visitorsError;
 
             const visitorsToday = visitors?.filter(v =>
                 v.expected_date === today ||
-                (v.checked_in_at && v.checked_in_at.startsWith(today))
+                (v.check_in_time && v.check_in_time.startsWith(today))
             ).length || 0;
 
             const insideNow = visitors?.filter(v => v.status === 'checked-in').length || 0;
 
-            // Fetch pending parcels
+            // Fetch pending parcels (received but not yet collected)
             const { data: parcels, error: parcelsError } = await supabase
                 .from('parcels')
                 .select('id')
                 .eq('society_id', societyId)
-                .eq('status', 'pending');
+                .in('status', ['received', 'notified']);
 
             if (parcelsError) throw parcelsError;
             const pendingParcels = parcels?.length || 0;

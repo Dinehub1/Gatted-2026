@@ -1,4 +1,4 @@
-import { UnitSelector } from '@/components/shared/UnitSelector';
+import { UnitSelector } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { useRecentUnits } from '@/hooks/useRecentUnits';
 import { useVisitorLookup } from '@/hooks/useVisitorLookup';
@@ -137,7 +137,7 @@ export default function WalkInVisitorScreen() {
             const { data: visitor, error: visitorError } = await supabase
                 .from('visitors')
                 .insert({
-                    society_id: currentRole?.society_id,
+                    society_id: currentRole?.society_id!, // Assumed non-null by check in validation or use ! since we check it elsewhere or handle error
                     unit_id: unitId,
                     host_id: hostId,
                     visitor_name: visitorName.trim(),
@@ -146,7 +146,7 @@ export default function WalkInVisitorScreen() {
                     visitor_type: 'walk-in',
                     status: 'pending',
                     expected_date: today,
-                })
+                } as any)
                 .select()
                 .single();
 

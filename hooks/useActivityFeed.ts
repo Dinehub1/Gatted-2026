@@ -7,6 +7,22 @@ interface UseActivityFeedOptions {
     limit?: number;
 }
 
+type VisitorData = {
+    id: string;
+    visitor_name: string;
+    visitor_type: string | null;
+    checked_in_at: string | null;
+    checked_out_at: string | null;
+    unit: { unit_number: string; block: { name: string } | null } | null;
+};
+
+type ParcelData = {
+    id: string;
+    created_at: string | null;
+    status: string;
+    unit: { unit_number: string; block: { name: string } | null } | null;
+};
+
 export function useActivityFeed({ societyId, limit = 10 }: UseActivityFeedOptions) {
     const [activities, setActivities] = useState<ActivityItemData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -35,17 +51,17 @@ export function useActivityFeed({ societyId, limit = 10 }: UseActivityFeedOption
             // Fetch recent parcels
             const { data: parcels, error: parcelsError } = await supabase
                 .from('parcels')
-                .select('id, received_at, status, unit:units(unit_number, block:blocks(name))')
+                .select('id, created_at, status, unit:units(unit_number, block:blocks(name))')
                 .eq('society_id', societyId)
-                .order('received_at', { ascending: false })
+                .order('created_at', { ascending: false })
                 .limit(limit);
 
             if (parcelsError) throw parcelsError;
 
             // Transform to activity items
-            const visitorActivities: ActivityItemData[] = (visitors || []).flatMap(v => {
+            const visitorActivities: ActivityItemData[] = ((visitors || []) as VisitorData[]).flatMap((v) => {
                 const items: ActivityItemData[] = [];
-                const unitInfo = v.unit ? `${(v.unit as any).block?.name || ''}-${(v.unit as any).unit_number}` : '';
+                const unitInfo = v.unit ? `${v.unit.block?.name || ''}-${v.unit.unit_number}` : '';
 
                 if (v.checked_in_at) {
                     items.push({
@@ -70,16 +86,16 @@ export function useActivityFeed({ societyId, limit = 10 }: UseActivityFeedOption
                 return items;
             });
 
-            const parcelActivities: ActivityItemData[] = (parcels || [])
-                .filter(p => p.received_at)
-                .map(p => {
-                    const unitInfo = p.unit ? `${(p.unit as any).block?.name || ''}-${(p.unit as any).unit_number}` : '';
+            const parcelActivities: ActivityItemData[] = ((parcels || []) as ParcelData[])
+                .filter((p) => p.created_at)
+                .map((p) => {
+                    const unitInfo = p.unit ? `${p.unit.block?.name || ''}-${p.unit.unit_number}` : '';
                     return {
                         id: `parcel-${p.id}`,
                         type: 'parcel' as ActivityType,
                         title: 'Parcel received',
                         subtitle: unitInfo ? `For ${unitInfo}` : 'New parcel',
-                        timestamp: new Date(p.received_at!),
+                        timestamp: new Date(p.created_at!),
                     };
                 });
 

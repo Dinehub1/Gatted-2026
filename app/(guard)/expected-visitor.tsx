@@ -8,13 +8,23 @@ import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, Toucha
 
 type VerifyMode = 'otp' | 'qr';
 
+type ExpectedVisitor = {
+    id: string;
+    visitor_name: string;
+    otp: string | null;
+    otp_expires_at: string | null;
+    expected_time: string | null;
+    unit?: { unit_number: string } | null;
+    host?: { full_name: string | null } | null;
+};
+
 export default function ExpectedVisitorScreen() {
     const router = useRouter();
     const { currentRole, profile } = useAuth();
     const [mode, setMode] = useState<VerifyMode>('otp');
     const [otp, setOtp] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [expectedVisitors, setExpectedVisitors] = useState<any[]>([]);
+    const [expectedVisitors, setExpectedVisitors] = useState<ExpectedVisitor[]>([]);
     const [loadingVisitors, setLoadingVisitors] = useState(true);
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
@@ -71,7 +81,7 @@ export default function ExpectedVisitorScreen() {
             return;
         }
 
-        if (new Date(visitor.otp_expires_at) < new Date()) {
+        if (!visitor.otp_expires_at || new Date(visitor.otp_expires_at) < new Date()) {
             Alert.alert('Error', 'OTP has expired. Please ask the resident to generate a new one.');
             setIsLoading(false);
             return;
@@ -105,7 +115,7 @@ export default function ExpectedVisitorScreen() {
                 return;
             }
 
-            if (new Date(visitor.otp_expires_at) < new Date()) {
+            if (!visitor.otp_expires_at || new Date(visitor.otp_expires_at) < new Date()) {
                 Alert.alert('Error', 'QR code has expired', [
                     { text: 'OK', onPress: () => setScanned(false) }
                 ]);

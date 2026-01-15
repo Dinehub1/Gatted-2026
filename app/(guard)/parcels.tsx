@@ -1,4 +1,4 @@
-import { UnitSelector } from '@/components/shared/UnitSelector';
+import { UnitSelector } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import type { Parcel as ParcelType } from '@/types';
@@ -57,7 +57,7 @@ export default function ParcelsScreen() {
                 .select('*')
                 .eq('society_id', currentRole.society_id)
                 .in('status', ['received', 'notified'])
-                .order('received_at', { ascending: false });
+                .order('created_at', { ascending: false });
 
             if (error) {
                 console.error('Error loading parcels:', error);
@@ -144,7 +144,6 @@ export default function ParcelsScreen() {
                     tracking_number: trackingNumber.trim() || null,
                     description: description.trim() || null,
                     received_by: profile?.id,
-                    received_at: new Date().toISOString(),
                     status: 'received',
                 });
 
@@ -212,7 +211,7 @@ export default function ParcelsScreen() {
                     <Text style={styles.parcelDetail}>#{item.tracking_number}</Text>
                 )}
                 <Text style={styles.parcelTime}>
-                    {item.received_at ? new Date(item.received_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                    {item.created_at ? new Date(item.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                 </Text>
             </View>
             <TouchableOpacity
