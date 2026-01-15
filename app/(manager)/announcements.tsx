@@ -1,4 +1,4 @@
-import { AnnouncementCard } from '@/components/shared';
+import { AnnouncementCard } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,6 +42,7 @@ export default function AnnouncementsManager() {
                 .from('announcements')
                 .select('*')
                 .eq('society_id', societyId)
+                .eq('is_active', true)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -80,17 +81,17 @@ export default function AnnouncementsManager() {
     const handleDelete = async (id: string) => {
         Alert.alert(
             'Delete Announcement',
-            'Are you sure you want to delete this announcement?',
+            'Are you sure you want to remove this announcement?',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Delete',
+                    text: 'Remove',
                     style: 'destructive',
                     onPress: async () => {
                         try {
                             const { error } = await supabase
                                 .from('announcements')
-                                .delete()
+                                .update({ is_active: false })
                                 .eq('id', id);
 
                             if (error) throw error;

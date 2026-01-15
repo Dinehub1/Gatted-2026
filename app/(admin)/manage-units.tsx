@@ -1,5 +1,5 @@
+import { PageHeader, SectionTitle } from '@/components';
 import ContextMenu from '@/components/admin/ContextMenu';
-import { PageHeader, SectionTitle } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -96,24 +96,25 @@ export default function ManageProperties() {
         const hasData = (society.block_count || 0) > 0 || (society.unit_count || 0) > 0;
 
         Alert.alert(
-            '⚠️ Archive Society?',
+            '⚠️ Delete Society?',
             hasData
-                ? `This society has:\n• ${society.block_count} blocks\n• ${society.unit_count} units\n• ${society.manager_count} managers\n\nArchived societies can be restored later.`
-                : 'Archive this society? It can be restored later.',
+                ? `This society has:\n• ${society.block_count} blocks\n• ${society.unit_count} units\n• ${society.manager_count} managers\n\n⚠️ This action is PERMANENT and cannot be undone.`
+                : 'Delete this society? This action is PERMANENT.',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Archive',
+                    text: 'Delete',
                     style: 'destructive',
                     onPress: async () => {
                         try {
                             const { error } = await supabase
                                 .from('societies')
-                                .update({ is_archived: true })
+                                // .update({ is_archived: true }) // Column does not exist
+                                .delete() // Using delete instead since archive is not supported
                                 .eq('id', society.id);
                             if (error) throw error;
                             fetchSocieties();
-                            Alert.alert('Success', 'Society archived');
+                            Alert.alert('Success', 'Society deleted');
                         } catch (error: any) {
                             Alert.alert('Error', error.message);
                         }

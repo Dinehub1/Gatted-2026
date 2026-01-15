@@ -1,4 +1,4 @@
-import { Button, FormSection, PageHeader, TextInput } from '@/components/shared';
+import { Button, FormSection, PageHeader, TextInput } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { showError, showSuccess } from '@/utils';
@@ -13,6 +13,14 @@ export default function CreateAnnouncementScreen() {
     const [message, setMessage] = useState('');
     const [targetType, setTargetType] = useState<'all' | 'role'>('all'); // Simplified for MVP
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Sanitize input to prevent XSS
+    const sanitizeInput = (input: string) => {
+        return input
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .trim();
+    };
 
     const handleSubmit = async () => {
         if (!title.trim() || !message.trim()) {
@@ -31,8 +39,8 @@ export default function CreateAnnouncementScreen() {
                 .from('announcements')
                 .insert({
                     society_id: currentRole.society_id,
-                    title: title.trim(),
-                    message: message.trim(),
+                    title: sanitizeInput(title),
+                    message: sanitizeInput(message),
                     target_type: targetType,
                     created_by: profile?.id,
                     created_at: new Date().toISOString(),

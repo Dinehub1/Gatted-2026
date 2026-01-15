@@ -9,8 +9,8 @@ import {
     SectionTitle,
     StatCard,
     StatRow,
-} from '@/components/shared';
-import { VisitorApprovalCard } from '@/components/shared/VisitorApprovalCard';
+} from '@/components';
+import { VisitorApprovalCard } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { useActivityFeed, useGuardDashboard, useGuardShift } from '@/hooks';
 import { useVisitorApproval } from '@/hooks/useVisitorApproval';

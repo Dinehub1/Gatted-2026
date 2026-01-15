@@ -1,4 +1,4 @@
-import { PageHeader } from '@/components/shared';
+import { PageHeader } from '@/components';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -22,7 +22,7 @@ type UserProfile = {
     email: string | null;
     phone: string | null;
     role?: string;
-    society_id?: string;
+    society_id?: string | null;
     society_name?: string;
     user_roles?: { role: string; society_id: string; society?: { name: string } }[];
 };
@@ -86,11 +86,11 @@ export default function ManageUsers() {
             if (profilesError) throw profilesError;
 
             // Flatten structure for easier display
-            const formattedUsers = profiles.map((p: any) => ({
+            const formattedUsers = profiles.map((p) => ({
                 ...p,
                 role: p.user_roles?.[0]?.role || 'N/A',
                 society_id: p.user_roles?.[0]?.society_id || null,
-                society_name: p.user_roles?.[0]?.society?.name || 'No Society'
+                society_name: (p.user_roles?.[0]?.society as { name: string } | null)?.name || 'No Society'
             }));
 
             setUsers(formattedUsers);

@@ -1,6 +1,6 @@
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { AnnouncementCard, PageHeader } from '@/components/shared';
+import { AnnouncementCard, PageHeader } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';

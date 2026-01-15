@@ -5,8 +5,8 @@ import {
     SectionTitle,
     StatCard,
     StatRow,
-} from '@/components/shared';
-import { VisitorApprovalCard } from '@/components/shared/VisitorApprovalCard';
+} from '@/components';
+import { VisitorApprovalCard } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { useVisitorApproval } from '@/hooks/useVisitorApproval';
 import { supabase } from '@/lib/supabase';

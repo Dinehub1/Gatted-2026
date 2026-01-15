@@ -1,4 +1,4 @@
-import { PageHeader } from '@/components/shared';
+import { PageHeader } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -93,19 +93,25 @@ export default function FamilyManagement() {
 
             if (insertError) throw insertError;
 
-            // 3. Also add a 'resident' role for them if they don't have it? 
-            // Ideally trigger or backend logic should handle this, 
-            // but for MVP we assume they just need to be in unit_members to be seen here.
-            // But they need 'user_roles' to login as resident. Let's add that too.
-            await supabase
+            // 3. Add resident role if they don't already have one for this unit
+            const { data: existingRole } = await supabase
                 .from('user_roles')
-                .insert({
-                    user_id: users.id,
-                    role: 'resident',
-                    society_id: currentRole.society_id, // Required for RLS policies
-                    unit_id: currentRole.unit_id,
-                    is_active: true
-                });
+                .select('id')
+                .eq('user_id', users.id)
+                .eq('unit_id', currentRole.unit_id)
+                .maybeSingle();
+
+            if (!existingRole) {
+                await supabase
+                    .from('user_roles')
+                    .insert({
+                        user_id: users.id,
+                        role: 'resident',
+                        society_id: currentRole.society_id,
+                        unit_id: currentRole.unit_id,
+                        is_active: true
+                    } as any);
+            }
 
             Alert.alert('Success', 'Family member added!');
             setModalVisible(false);

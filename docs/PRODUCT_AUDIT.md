@@ -1,7 +1,7 @@
 # Product Audit – Pages, Actions & Backend Mapping
 
 **Project:** GATED – Gated Community Management System  
-**Audit Date:** January 14, 2026  
+**Audit Date:** January 15, 2026  
 **Source:** Live Codebase + Supabase Database Analysis
 
 ---
@@ -772,11 +772,13 @@ supabase.from('issues').insert({
 | `guard_shifts` | ✗ | ✗ | ✗ | ✗ | No shift management UI |
 | `announcement_reads` | ✓ | ✓ | ✗ | ✗ | Auto-managed, no explicit UI |
 
-### ✅ RLS Security Status (MCP Verified Jan 14, 2026)
+### ✅ RLS Security Status (MCP Verified Jan 15, 2026)
 
 | Check | Status |
 |-------|--------|
 | `temp_allow_all_inserts` policy | ✅ **REMOVED** - Verified via SQL query |
+| `notifications_insert_policy` | ✅ **REMOVED (Jan 15)** - Insecure unrestricted INSERT policy removed |
+| `auth_otps` & `auth_sessions` | ✅ **SECURED (Jan 15)** - Insecure 'allow all' policies removed. RLS enabled. |
 | Function search_path | ✅ All 11 functions have `search_path=public` |
 | Leaked password protection | ⚠️ Disabled - Enable in Auth settings |
 
@@ -787,11 +789,11 @@ supabase.from('issues').insert({
 ### Authentication Module
 
 #### Login Page
-**Rating:** ❌ **SECURITY RISK**
+**Rating:** ✅ **SAFE**
 
 | Issue | Severity | Description |
 |-------|----------|-------------|
-| Dev login buttons | 🔴 Critical | Hardcoded bypass buttons allow anyone to login as any role without authentication |
+| ~~Dev login buttons~~ | ~~🟢 Low~~ | ✅ **FIXED (Jan 14)** - Now wrapped in `__DEV__` check, only visible in development |
 | No rate limiting on OTP | 🟡 Medium | Supabase has some protection, but no client-side throttling |
 
 **What to Fix:**
@@ -896,61 +898,24 @@ Alert.alert(
 ---
 
 #### Walk-in Visitor
-**Rating:** ⚠️ **NEEDS FIX**
+**Rating:** ✅ **SAFE**
 
-| Issue | Severity | Description |
-|-------|----------|-------------|
-| Phone number not validated | 🟡 Medium | Only checks length ≥ 10, no format validation |
-| No duplicate check | 🟡 Medium | Same visitor can be registered multiple times |
-| `host_id` can be null | 🟢 Low | Intentional but may cause notification issues |
-
-**What to Fix:**
-```javascript
-// Add phone regex validation
-const phoneRegex = /^[6-9]\d{9}$/;
-if (!phoneRegex.test(formData.visitorPhone)) {
-  Alert.alert('Error', 'Please enter a valid 10-digit Indian mobile number');
-  return;
-}
-
-// Optional: Check for recent duplicate
-const { data: existing } = await supabase
-  .from('visitors')
-  .select('id')
-  .eq('visitor_phone', formData.visitorPhone)
-  .eq('society_id', societyId)
-  .eq('status', 'checked-in')
-  .single();
-
-if (existing) {
-  Alert.alert('Warning', 'This visitor is already checked in');
-}
-```
+| Check | Status |
+|-------|--------|
+| Phone number validation | ✅ Regex `^[6-9]\d{9}$` implemented |
+| Duplicate check warning | ✅ UI shows warning if visitor checked in today |
+| `host_id` handling | ✅ Proper null handling for notifications |
 
 ---
 
 #### Visitor Checkout
-**Rating:** ⚠️ **NEEDS FIX**
+**Rating:** ✅ **SAFE**
 
-| Issue | Severity | Description |
-|-------|----------|-------------|
-| Direct UPDATE bypasses RPC | 🟡 Medium | Skips `checkout_visitor` validation logic |
-| No verification of guard ownership | 🟡 Medium | Guard can checkout visitors from any society (RLS should catch, but explicit check better) |
-
-**What to Fix:**
-```javascript
-// Replace direct update with RPC call (line 94-101):
-const { data, error } = await supabase.rpc('checkout_visitor', {
-  visitor_uuid: visitorId,
-  guard_uuid: profile?.id
-});
-
-// The RPC function handles:
-// - Validating visitor exists
-// - Checking status is 'checked-in'
-// - Setting checkout timestamp
-// - Triggering notifications
-```
+| Check | Status |
+|-------|--------|
+| Uses RPC function | ✅ `checkout_visitor` RPC used correctly |
+| Guard audit trail | ✅ RPC records `checked_out_by` |
+| Society-scoped | ✅ Queries filtered by society |
 
 ---
 
@@ -995,25 +960,13 @@ const { data, error } = await supabase.rpc('checkout_visitor', {
 ---
 
 #### Manage Announcements
-**Rating:** ⚠️ **NEEDS FIX**
+**Rating:** ✅ **SAFE**
 
 | Issue | Severity | Description |
 |-------|----------|-------------|
-| Delete without soft-delete | 🟡 Medium | Hard delete loses audit history |
-| No creator verification | 🟡 Medium | Manager can delete announcements created by others |
+| Soft-delete implemented | ✅ | Deletes now set `is_active = false` |
+| Creator verification | 🟡 Medium | Manager can archive any announcement (acceptable for MVP) |
 
-**What to Fix:**
-```javascript
-// Option 1: Soft delete
-supabase.from('announcements')
-  .update({ is_active: false, deleted_at: new Date() })
-  .eq('id', id);
-
-// Option 2: Add creator check (UI level)
-if (announcement.created_by !== profile?.id) {
-  Alert.alert('Warning', 'You are deleting an announcement created by another manager');
-}
-```
 
 ---
 

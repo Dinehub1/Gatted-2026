@@ -5,7 +5,7 @@
 **Region:** `ap-southeast-2`  
 **Status:** ✅ ACTIVE_HEALTHY  
 **Database Version:** PostgreSQL 17.6.1.063  
-**Generated:** January 14, 2026  
+**Generated:** January 15, 2026  
 **Source:** Live Supabase MCP Metadata
 
 ---
@@ -366,15 +366,14 @@ Society-wide or targeted notifications.
 | `created_at` | timestamptz | YES | `now()` |
 | `updated_at` | timestamptz | YES | `now()` |
 
-**RLS Policies (6)**
+**RLS Policies (5)** ✅ Secure
 | Policy | Command | Applied To | Condition |
 |--------|---------|------------|-----------|
-| Staff can create announcements | INSERT | public | Manager/Guard role check |
-| Staff can delete announcements | DELETE | public | Manager/Admin role |
-| Staff can update announcements | UPDATE | public | Manager/Admin role |
-| Users can view announcements | SELECT | public | Society via `user_roles` |
-| `temp_allow_all_inserts` ⚠️ | INSERT | - | `true` (INSECURE!) |
-| view_announcements | SELECT | public | Society check |
+| Staff can create announcements | INSERT | public | Manager/Guard role + society match |
+| insert_announcements | INSERT | public | Manager/Admin role + society match |
+| delete_announcements | DELETE | public | Manager/Admin role + society match |
+| update_announcements | UPDATE | public | Manager/Admin role + society match |
+| view_announcements | SELECT | public | User's society via `user_roles` |
 
 **Indexes:** `announcements_pkey`, `idx_announcements_society`, `idx_announcements_active`, `idx_announcements_society_active`
 
@@ -457,13 +456,13 @@ System notification storage.
 
 **Notification Types:** `visitor_checkin`, `visitor_checkout`, `visitor_denied`, `issue_update`, `parcel_received`, `announcement`, `alert`, `system`
 
-**RLS Policies (4)**
+**RLS Policies (4)** ✅ Secure
 | Policy | Command | Applied To | Condition |
 |--------|---------|------------|-----------|
-| Users can delete own notifications | DELETE | public | `user_id = auth.uid()` |
-| Users can insert own notifications | INSERT | public | `user_id = auth.uid()` |
-| Users can update own notifications | UPDATE | public | `user_id = auth.uid()` |
-| Users can view own notifications | SELECT | public | `user_id = auth.uid()` |
+| users_delete_own_notifications | DELETE | public | `user_id = auth.uid()` |
+| system_insert_notifications | INSERT | public | `user_id = auth.uid()` OR Guard/Manager/Admin role |
+| users_select_own_notifications | SELECT | public | `user_id = auth.uid()` |
+| users_update_own_notifications | UPDATE | public | `user_id = auth.uid()` |
 
 **Indexes:** `notifications_pkey`, `idx_notifications_user`, `idx_notifications_unread`, `idx_notifications_society_user`
 

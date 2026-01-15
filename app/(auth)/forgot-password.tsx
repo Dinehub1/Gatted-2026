@@ -1,4 +1,4 @@
-import { Button, FormSection, TextInput } from '@/components/shared';
+import { Button, FormSection, TextInput } from '@/components';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';

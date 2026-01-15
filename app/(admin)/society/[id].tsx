@@ -1,5 +1,5 @@
+import { PageHeader, SectionTitle } from '@/components';
 import ContextMenu from '@/components/admin/ContextMenu';
-import { PageHeader, SectionTitle } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -137,7 +137,7 @@ export default function SocietyBlocks() {
                         name: blockName.trim(),
                         society_id: id,
                         total_floors: parseInt(blockFloors) || 0,
-                        is_archived: false,
+                        // is_archived: false,
                     });
                 if (error) throw error;
                 Alert.alert('Success', 'Block created');
@@ -151,23 +151,24 @@ export default function SocietyBlocks() {
 
     const handleArchive = (block: Block) => {
         Alert.alert(
-            '⚠️ Archive Block?',
+            '⚠️ Delete Block?',
             block.unit_count && block.unit_count > 0
-                ? `This block has ${block.unit_count} units.\n\nArchived blocks can be restored later.`
-                : 'Archive this block? It can be restored later.',
+                ? `This block has ${block.unit_count} units.\n\n⚠️ This action is PERMANENT.`
+                : 'Delete this block? This action is PERMANENT.',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Archive',
+                    text: 'Delete',
                     style: 'destructive',
                     onPress: async () => {
                         try {
                             await supabase
                                 .from('blocks')
-                                .update({ is_archived: true })
+                                // .update({ is_archived: true }) // Column does not exist
+                                .delete()
                                 .eq('id', block.id);
                             fetchData();
-                            Alert.alert('Success', 'Block archived');
+                            Alert.alert('Success', 'Block deleted');
                         } catch (error: any) {
                             Alert.alert('Error', error.message);
                         }

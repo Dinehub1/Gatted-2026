@@ -5,7 +5,7 @@ import {
     PageHeader,
     SectionTitle,
     TextInput
-} from '@/components/shared';
+} from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { useProfile } from '@/hooks/useProfile';
 import { showError } from '@/utils';
@@ -66,7 +66,7 @@ export function ProfileScreen() {
                     <ListItem
                         icon="home-outline"
                         iconColor="#8b5cf6"
-                        iconBackground="#ede9fe"
+                        iconBackgroundColor="#ede9fe"
                         title="Unit"
                         subtitle={currentRole?.unit?.unit_number || 'Not assigned'}
                     />
@@ -81,7 +81,7 @@ export function ProfileScreen() {
                 <ListItem
                     icon="shield-checkmark-outline"
                     iconColor="#8b5cf6"
-                    iconBackground="#ede9fe"
+                    iconBackgroundColor="#ede9fe"
                     title="Designation"
                     subtitle={role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Staff'}
                 />
@@ -148,21 +148,21 @@ export function ProfileScreen() {
                         <ListItem
                             icon="person-outline"
                             iconColor="#3b82f6"
-                            iconBackground="#dbeafe"
+                            iconBackgroundColor="#dbeafe"
                             title="Full Name"
                             subtitle={authProfile?.full_name || 'Not set'}
                         />
                         <ListItem
                             icon="mail-outline"
                             iconColor="#10b981"
-                            iconBackground="#d1fae5"
+                            iconBackgroundColor="#d1fae5"
                             title="Email"
                             subtitle={authProfile?.email || 'Not set'}
                         />
                         <ListItem
                             icon="call-outline"
                             iconColor="#f59e0b"
-                            iconBackground="#fef3c7"
+                            iconBackgroundColor="#fef3c7"
                             title="Phone"
                             subtitle={authProfile?.phone || 'Not set'}
                         />
@@ -174,7 +174,7 @@ export function ProfileScreen() {
                 <ListItem
                     icon="business-outline"
                     iconColor="#ec4899"
-                    iconBackground="#fce7f3"
+                    iconBackgroundColor="#fce7f3"
                     title="Society"
                     subtitle={currentRole?.society?.name || 'Not assigned'}
                 />
@@ -183,7 +183,7 @@ export function ProfileScreen() {
                 <ListItem
                     icon="log-out-outline"
                     iconColor="#ef4444"
-                    iconBackground="#fee2e2"
+                    iconBackgroundColor="#fee2e2"
                     title="Sign Out"
                     subtitle="Log out of your account"
                     onPress={signOut}

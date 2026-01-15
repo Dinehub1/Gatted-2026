@@ -1,9 +1,22 @@
-import { supabaseHelpers } from '@/lib/supabase';
+import { authApi } from '@/lib/auth-api';
 import { useAuthStore } from '@/stores/auth.store';
 import { act, renderHook } from '@testing-library/react-native';
 
-// Mock the supabase module
-jest.mock('@/lib/supabase');
+// Mock the auth-api module
+jest.mock('@/lib/auth-api');
+
+// Mock supabase module (for devLogin fallback)
+jest.mock('@/lib/supabase', () => ({
+    supabase: {
+        auth: {
+            signInWithPassword: jest.fn(),
+        },
+    },
+    supabaseHelpers: {
+        getProfile: jest.fn(),
+        getUserRoles: jest.fn(),
+    },
+}));
 
 describe('AuthStore', () => {
     beforeEach(() => {
@@ -16,54 +29,58 @@ describe('AuthStore', () => {
     });
 
     describe('signInWithOTP', () => {
-        it('should call supabaseHelpers.signInWithOTP with phone number', async () => {
+        it('should call authApi.sendOTP with phone number', async () => {
             const { result } = renderHook(() => useAuthStore());
             const mockPhone = '+919876543210';
 
-            (supabaseHelpers.signInWithOTP as jest.Mock).mockResolvedValue({ error: null });
+            (authApi.sendOTP as jest.Mock).mockResolvedValue({
+                data: { success: true, message: 'OTP sent' },
+                error: null
+            });
 
             await act(async () => {
                 await result.current.signInWithOTP(mockPhone);
             });
 
-            expect(supabaseHelpers.signInWithOTP).toHaveBeenCalledWith(mockPhone);
+            expect(authApi.sendOTP).toHaveBeenCalledWith(mockPhone);
         });
 
-        it('should return error when OTP sign in fails', async () => {
+        it('should return error when OTP send fails', async () => {
             const { result } = renderHook(() => useAuthStore());
             const mockError = new Error('Invalid phone number');
 
-            (supabaseHelpers.signInWithOTP as jest.Mock).mockResolvedValue({ error: mockError });
+            (authApi.sendOTP as jest.Mock).mockResolvedValue({
+                data: null,
+                error: mockError
+            });
 
             let response;
             await act(async () => {
                 response = await result.current.signInWithOTP('+919876543210');
             });
 
-            expect(response).toHaveProperty('error', mockError);
+            expect(response).toHaveProperty('error');
         });
     });
 
     describe('verifyOTP', () => {
         it('should set authenticated state on successful verification', async () => {
             const { result } = renderHook(() => useAuthStore());
-            const mockSession = { access_token: 'test-token' };
-            const mockUser = { id: 'user-123', phone: '+919876543210' };
+            const mockUser = { id: 'user-123', phone: '+919876543210', full_name: 'Test User' };
+            const mockRoles = [{ id: 'role-1', role: 'guard', society_id: 'society-1', unit_id: null }];
 
-            (supabaseHelpers.verifyOTP as jest.Mock).mockResolvedValue({
-                data: { session: mockSession, user: mockUser },
+            (authApi.verifyOTP as jest.Mock).mockResolvedValue({
+                data: {
+                    success: true,
+                    user: mockUser,
+                    roles: mockRoles,
+                    session_token: 'test-session-token',
+                    expires_at: new Date(Date.now() + 86400000).toISOString()
+                },
                 error: null,
             });
 
-            (supabaseHelpers.getProfile as jest.Mock).mockResolvedValue({
-                data: { id: 'user-123', full_name: 'Test User' },
-                error: null,
-            });
-
-            (supabaseHelpers.getUserRoles as jest.Mock).mockResolvedValue({
-                data: [{ id: 'role-1', role: 'guard', society_id: 'society-1' }],
-                error: null,
-            });
+            (authApi.getCurrentRoleId as jest.Mock).mockResolvedValue(null);
 
             await act(async () => {
                 await result.current.verifyOTP('+919876543210', '123456');
@@ -71,6 +88,26 @@ describe('AuthStore', () => {
 
             expect(result.current.isAuthenticated).toBe(true);
             expect(result.current.user).toEqual(mockUser);
+            expect(result.current.profile).toEqual(mockUser);
+            expect(result.current.roles).toEqual(mockRoles);
+        });
+
+        it('should return error when OTP verification fails', async () => {
+            const { result } = renderHook(() => useAuthStore());
+            const mockError = new Error('Invalid OTP');
+
+            (authApi.verifyOTP as jest.Mock).mockResolvedValue({
+                data: null,
+                error: mockError,
+            });
+
+            let response;
+            await act(async () => {
+                response = await result.current.verifyOTP('+919876543210', '000000');
+            });
+
+            expect(response).toHaveProperty('error');
+            expect(result.current.isAuthenticated).toBe(false);
         });
     });
 
@@ -84,7 +121,7 @@ describe('AuthStore', () => {
                 result.current.isAuthenticated = true;
             });
 
-            (supabaseHelpers.signOut as jest.Mock).mockResolvedValue({});
+            (authApi.signOut as jest.Mock).mockResolvedValue(undefined);
 
             await act(async () => {
                 await result.current.signOut();
@@ -98,7 +135,7 @@ describe('AuthStore', () => {
     });
 
     describe('setCurrentRole', () => {
-        it('should update current role', () => {
+        it('should update current role and save to storage', () => {
             const { result } = renderHook(() => useAuthStore());
             const mockRole = {
                 id: 'role-1',
@@ -107,11 +144,50 @@ describe('AuthStore', () => {
                 unit_id: null,
             };
 
+            (authApi.setCurrentRole as jest.Mock).mockResolvedValue(undefined);
+
             act(() => {
                 result.current.setCurrentRole(mockRole);
             });
 
             expect(result.current.currentRole).toEqual(mockRole);
+            expect(authApi.setCurrentRole).toHaveBeenCalledWith('role-1');
+        });
+    });
+
+    describe('initialize', () => {
+        it('should load existing session on init', async () => {
+            const { result } = renderHook(() => useAuthStore());
+            const mockSession = {
+                token: 'test-token',
+                user: { id: 'user-123', phone: '+919876543210' },
+                roles: [{ id: 'role-1', role: 'guard', society_id: 'society-1' }],
+                expires_at: new Date(Date.now() + 86400000).toISOString()
+            };
+
+            (authApi.getSession as jest.Mock).mockResolvedValue(mockSession);
+            (authApi.validateSession as jest.Mock).mockResolvedValue({ valid: true, session: mockSession });
+            (authApi.getCurrentRoleId as jest.Mock).mockResolvedValue(null);
+
+            await act(async () => {
+                await result.current.initialize();
+            });
+
+            expect(result.current.isAuthenticated).toBe(true);
+            expect(result.current.isLoading).toBe(false);
+        });
+
+        it('should set loading false even with no session', async () => {
+            const { result } = renderHook(() => useAuthStore());
+
+            (authApi.getSession as jest.Mock).mockResolvedValue(null);
+
+            await act(async () => {
+                await result.current.initialize();
+            });
+
+            expect(result.current.isAuthenticated).toBe(false);
+            expect(result.current.isLoading).toBe(false);
         });
     });
 });

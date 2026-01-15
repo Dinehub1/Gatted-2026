@@ -33,7 +33,7 @@ export function useVisitorStats({ societyId, userId, mode }: UseVisitorStatsOpti
 
             let query = supabase
                 .from('visitors')
-                .select('id, status, expected_date, checked_in_at');
+                .select('id, status, expected_date, check_in_time');
 
             if (mode === 'society' && societyId) {
                 query = query.eq('society_id', societyId);
@@ -50,7 +50,7 @@ export function useVisitorStats({ societyId, userId, mode }: UseVisitorStatsOpti
 
             const todayVisitors = visitors?.filter(v =>
                 v.expected_date === today ||
-                (v.checked_in_at && v.checked_in_at.startsWith(today))
+                (v.check_in_time && v.check_in_time.startsWith(today))
             ) || [];
 
             const upcoming = visitors?.filter(v =>

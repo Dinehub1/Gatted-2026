@@ -1,31 +1,22 @@
+/**
+ * Authentication Store (Zustand)
+ * 
+ * Manages auth state using custom NEXTEL OTP authentication.
+ * Replaces Supabase Auth with custom sessions.
+ */
+
+import { authApi, AuthSession, UserRoleData } from '@/lib/auth-api';
 import { supabase, supabaseHelpers } from '@/lib/supabase';
 import type { Profile, UserRoleType } from '@/types';
 import { handleApiError, logError } from '@/utils/error-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Session, Subscription, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
-// Store auth subscription for cleanup
-let authSubscription: Subscription | null = null;
-
-export interface UserRoleData {
-    id: string;
-    role: UserRoleType;
-    society_id: string | null;
-    unit_id: string | null;
-    society?: {
-        id: string;
-        name: string;
-    } | null;
-    unit?: {
-        id: string;
-        unit_number: string;
-    } | null;
-}
+export type { UserRoleData };
 
 export interface AuthState {
-    user: User | null;
-    session: Session | null;
+    user: Profile | null;
+    session: AuthSession | null;
     profile: Profile | null;
     roles: UserRoleData[];
     currentRole: UserRoleData | null;
@@ -54,7 +45,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     signInWithOTP: async (phone: string) => {
         try {
-            const { error } = await supabaseHelpers.signInWithOTP(phone);
+            const { data, error } = await authApi.sendOTP(phone);
 
             if (error) {
                 logError(error, 'OTP sign in failed', { severity: 'medium' });
@@ -70,22 +61,41 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     verifyOTP: async (phone: string, token: string) => {
         try {
-            const { data, error } = await supabaseHelpers.verifyOTP(phone, token);
+            const { data, error } = await authApi.verifyOTP(phone, token);
 
             if (error) {
                 logError(error, 'OTP verification failed', { severity: 'medium' });
                 return { error: handleApiError(error) };
             }
 
-            if (data.session && data.user) {
-                set({
-                    session: data.session,
+            if (data?.user && data?.session_token) {
+                const session: AuthSession = {
+                    token: data.session_token,
                     user: data.user,
+                    roles: data.roles || [],
+                    expires_at: data.expires_at!
+                };
+
+                set({
+                    session,
+                    user: data.user,
+                    profile: data.user,
+                    roles: data.roles || [],
                     isAuthenticated: true,
                 });
 
-                // Load user data after successful verification
-                await get().loadUserData();
+                // Auto-select role if only one exists
+                const roles = data.roles || [];
+                if (roles.length === 1) {
+                    get().setCurrentRole(roles[0]);
+                } else if (roles.length > 1) {
+                    // Try to load previously selected role
+                    const savedRoleId = await authApi.getCurrentRoleId();
+                    const savedRole = roles.find(r => r.id === savedRoleId);
+                    if (savedRole) {
+                        get().setCurrentRole(savedRole);
+                    }
+                }
             }
 
             return { error: null };
@@ -97,8 +107,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     signOut: async () => {
         try {
-            await supabaseHelpers.signOut();
-            await AsyncStorage.removeItem('current_role');
+            await authApi.signOut();
+            await AsyncStorage.removeItem('gated_current_role');
 
             set({
                 user: null,
@@ -115,34 +125,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     loadUserData: async () => {
         try {
-            const { user } = get();
-            if (!user) return;
+            const { valid, session } = await authApi.validateSession();
 
-            // Load profile
-            const { data: profile, error: profileError } = await supabaseHelpers.getProfile(user.id);
-
-            if (profileError) {
-                logError(profileError, 'Failed to load user profile', { severity: 'medium' });
+            if (!valid || !session) {
+                set({
+                    user: null,
+                    session: null,
+                    profile: null,
+                    roles: [],
+                    currentRole: null,
+                    isAuthenticated: false,
+                });
                 return;
             }
 
-            // Load roles
-            const { data: roles, error: rolesError } = await supabaseHelpers.getUserRoles(user.id);
-
-            if (rolesError) {
-                logError(rolesError, 'Failed to load user roles', { severity: 'medium' });
-                return;
-            }
-
-            set({ profile, roles: roles || [] });
+            set({
+                session,
+                user: session.user,
+                profile: session.user,
+                roles: session.roles,
+                isAuthenticated: true,
+            });
 
             // Auto-select role if only one exists
-            if (roles && roles.length === 1) {
-                get().setCurrentRole(roles[0]);
-            } else if (roles && roles.length > 1) {
+            if (session.roles.length === 1) {
+                get().setCurrentRole(session.roles[0]);
+            } else if (session.roles.length > 1) {
                 // Try to load previously selected role
-                const savedRoleId = await AsyncStorage.getItem('current_role');
-                const savedRole = roles.find(r => r.id === savedRoleId);
+                const savedRoleId = await authApi.getCurrentRoleId();
+                const savedRole = session.roles.find(r => r.id === savedRoleId);
                 if (savedRole) {
                     get().setCurrentRole(savedRole);
                 }
@@ -154,27 +165,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     setCurrentRole: (role: UserRoleData) => {
         set({ currentRole: role });
-        AsyncStorage.setItem('current_role', role.id);
+        authApi.setCurrentRole(role.id);
     },
 
-    // Dev Login - Uses real Supabase email/password auth with test credentials
+    // Dev Login - Uses test credentials for development only
     devLogin: async (role: UserRoleType) => {
-        const credentials: Record<UserRoleType, { email: string; password: string }> = {
-            guard: { email: 'guard@test.com', password: 'test1234' },
-            resident: { email: 'resident@test.com', password: 'test1234' },
-            manager: { email: 'manager@test.com', password: 'test1234' },
-            admin: { email: 'admin@test.com', password: 'test1234' },
-            owner: { email: 'resident@test.com', password: 'test1234' },
-            tenant: { email: 'resident@test.com', password: 'test1234' },
+        if (!__DEV__) {
+            console.warn('Dev login is only available in development mode');
+            return;
+        }
+
+        // Map roles to test phone numbers (set up matching profiles in DB)
+        const testPhones: Record<UserRoleType, string> = {
+            guard: '+919999000001',
+            resident: '+919999000002',
+            manager: '+919999000003',
+            admin: '+919999000004',
+            owner: '+919999000002',
+            tenant: '+919999000002',
         };
 
-        const cred = credentials[role];
-        if (!cred) {
-            console.error('No test credentials for role:', role);
+        const phone = testPhones[role];
+        if (!phone) {
+            console.error('No test phone for role:', role);
             return;
         }
 
         try {
+            // In dev mode, try email/password login via Supabase Auth as fallback
+            const credentials: Record<UserRoleType, { email: string; password: string }> = {
+                guard: { email: 'guard@test.com', password: 'test1234' },
+                resident: { email: 'resident@test.com', password: 'test1234' },
+                manager: { email: 'manager@test.com', password: 'test1234' },
+                admin: { email: 'admin@test.com', password: 'test1234' },
+                owner: { email: 'resident@test.com', password: 'test1234' },
+                tenant: { email: 'resident@test.com', password: 'test1234' },
+            };
+
+            const cred = credentials[role];
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: cred.email,
                 password: cred.password,
@@ -186,72 +214,70 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
 
             if (data.session && data.user) {
+                // Load profile and roles using Supabase helpers
+                const { data: profile } = await supabaseHelpers.getProfile(data.user.id);
+                const { data: roles } = await supabaseHelpers.getUserRoles(data.user.id);
+
+                // Create a mock session for compatibility
+                const mockSession: AuthSession = {
+                    token: 'dev-' + data.session.access_token.slice(0, 20),
+                    user: profile!,
+                    roles: roles || [],
+                    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                };
+
                 set({
-                    session: data.session,
-                    user: data.user,
+                    session: mockSession,
+                    user: profile,
+                    profile: profile,
+                    roles: roles || [],
                     isAuthenticated: true,
                 });
 
-                // Load user data after successful login
-                await get().loadUserData();
+                // Auto-select first role
+                if (roles && roles.length > 0) {
+                    get().setCurrentRole(roles[0]);
+                }
             }
         } catch (error) {
             logError(error, 'Dev login exception', { severity: 'medium', context: { role } });
         }
     },
 
-    // Cleanup auth subscription to prevent memory leaks
     cleanup: () => {
-        if (authSubscription) {
-            authSubscription.unsubscribe();
-            authSubscription = null;
-        }
+        // No subscriptions to clean up with custom auth
     },
 
     initialize: async () => {
         try {
             set({ isLoading: true });
 
-            // Cleanup any existing subscription first
-            if (authSubscription) {
-                authSubscription.unsubscribe();
-                authSubscription = null;
-            }
-
             // Check for existing session
-            const { data: { session } } = await supabase.auth.getSession();
+            const session = await authApi.getSession();
 
-            if (session?.user) {
+            if (session) {
                 set({
                     session,
                     user: session.user,
+                    profile: session.user,
+                    roles: session.roles,
                     isAuthenticated: true,
                 });
 
+                // Auto-select role
+                if (session.roles.length === 1) {
+                    get().setCurrentRole(session.roles[0]);
+                } else if (session.roles.length > 1) {
+                    const savedRoleId = await authApi.getCurrentRoleId();
+                    const savedRole = session.roles.find(r => r.id === savedRoleId);
+                    if (savedRole) {
+                        get().setCurrentRole(savedRole);
+                    }
+                }
+
+                // Validate session in background
                 await get().loadUserData();
             }
-
-            // Listen for auth changes and store subscription
-            const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-                set({
-                    session,
-                    user: session?.user ?? null,
-                    isAuthenticated: !!session?.user,
-                });
-
-                if (session?.user) {
-                    await get().loadUserData();
-                } else {
-                    set({
-                        profile: null,
-                        roles: [],
-                        currentRole: null,
-                    });
-                }
-            });
-
-            // Store subscription for cleanup
-            authSubscription = subscription;
 
             set({ isLoading: false });
         } catch (error) {
