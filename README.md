@@ -1,4 +1,4 @@
-# GATED - Quick Start Guide
+# GATTED - Quick Start Guide
 
 ## 🚀 Getting Started
 
