@@ -16,8 +16,8 @@ type Visitor = {
     expected_date: string | null;
     expected_time?: string | null;
     otp?: string | null;
-    check_in_time?: string | null;
-    check_out_time?: string | null;
+    checked_in_at?: string | null;
+    checked_out_at?: string | null;
 };
 
 export default function MyVisitorsScreen() {

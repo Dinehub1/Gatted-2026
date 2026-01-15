@@ -37,7 +37,7 @@ export function useVisitorLookup({ phone, societyId, enabled = true }: UseVisito
             // Look for visitors with this phone number
             const { data: visitors, error } = await supabase
                 .from('visitors')
-                .select('id, visitor_name, status, check_in_time, created_at')
+                .select('id, visitor_name, status, checked_in_at, created_at')
                 .eq('society_id', societyId)
                 .eq('visitor_phone', cleanPhone)
                 .order('created_at', { ascending: false })
@@ -53,12 +53,12 @@ export function useVisitorLookup({ phone, societyId, enabled = true }: UseVisito
             // Check if already checked in today
             const checkedInToday = visitors.some(v =>
                 v.status === 'checked-in' &&
-                v.check_in_time?.startsWith(today)
+                v.checked_in_at?.startsWith(today)
             );
 
             // Get most recent visitor name
             const mostRecent = visitors[0];
-            const lastVisitDate = mostRecent.check_in_time || mostRecent.created_at;
+            const lastVisitDate = mostRecent.checked_in_at || mostRecent.created_at;
 
             setResult({
                 name: mostRecent.visitor_name,

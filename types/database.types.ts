@@ -810,8 +810,8 @@ export interface Database {
                     otp: string | null
                     otp_expires_at: string | null
                     qr_code: string | null
-                    check_in_time: string | null
-                    check_out_time: string | null
+                    checked_in_at: string | null
+                    checked_out_at: string | null
                     checked_in_by: string | null
                     checked_out_by: string | null
                     check_in_photo_url: string | null
@@ -841,8 +841,8 @@ export interface Database {
                     otp?: string | null
                     otp_expires_at?: string | null
                     qr_code?: string | null
-                    check_in_time?: string | null
-                    check_out_time?: string | null
+                    checked_in_at?: string | null
+                    checked_out_at?: string | null
                     checked_in_by?: string | null
                     checked_out_by?: string | null
                     check_in_photo_url?: string | null
@@ -872,8 +872,8 @@ export interface Database {
                     otp?: string | null
                     otp_expires_at?: string | null
                     qr_code?: string | null
-                    check_in_time?: string | null
-                    check_out_time?: string | null
+                    checked_in_at?: string | null
+                    checked_out_at?: string | null
                     checked_in_by?: string | null
                     checked_out_by?: string | null
                     check_in_photo_url?: string | null
