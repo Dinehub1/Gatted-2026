@@ -1,5 +1,5 @@
 /**
- * Centralized color theme for the GATED app.
+ * Centralized color theme for the GATTED app.
  * Use these colors throughout the app for consistency.
  */
 

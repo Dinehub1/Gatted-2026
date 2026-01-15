@@ -1,5 +1,5 @@
 /**
- * GATED Components Library
+ * GATTED Components Library
  * 
  * This file provides the main exports for reusable UI components.
  * 

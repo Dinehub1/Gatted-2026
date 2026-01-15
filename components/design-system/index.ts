@@ -1,7 +1,7 @@
 /**
- * @gated/ui - GATED UI Component Library
+ * @gatted/ui - GATTED UI Component Library
  * 
- * Shareable React Native UI components for GATED applications
+ * Shareable React Native UI components for GATTED applications
  * 
  * @example
  * ```tsx

@@ -1,3 +1,4 @@
+import { Branding } from '@/constants/branding';
 import { useAuth } from '@/contexts/auth-context';
 import { useAuthStore } from '@/stores/auth.store';
 import { Ionicons } from '@expo/vector-icons';
@@ -71,13 +72,13 @@ export default function LoginScreen() {
                 {/* Logo Section */}
                 <View style={styles.logoContainer}>
                     <LinearGradient
-                        colors={['#2563eb', '#1d4ed8']}
+                        colors={Branding.colors.gradient}
                         style={styles.logoBackground}
                     >
                         <Ionicons name="shield-checkmark" size={48} color="#fff" />
                     </LinearGradient>
-                    <Text style={styles.logoText}>GATED</Text>
-                    <Text style={styles.tagline}>Secure Society Management</Text>
+                    <Text style={styles.logoText}>{Branding.appName}</Text>
+                    <Text style={styles.tagline}>{Branding.tagline}</Text>
                 </View>
 
                 {/* Title */}
