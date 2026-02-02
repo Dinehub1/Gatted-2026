@@ -1,6 +1,6 @@
 /**
  * StatCard Component
- * A card for displaying statistics with an icon
+ * A compact card for displaying statistics with an icon (horizontal layout)
  */
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
@@ -25,7 +25,7 @@ export function StatCard({
     style,
 }: StatCardProps) {
     const theme = useTheme();
-    const { colors, borderRadius, spacing, typography } = theme;
+    const { colors, spacing, typography } = theme;
 
     return (
         <View
@@ -33,32 +33,35 @@ export function StatCard({
                 styles.card,
                 {
                     backgroundColor,
-                    borderRadius: borderRadius.lg,
-                    padding: spacing[4],
+                    borderRadius: 10,
+                    paddingVertical: spacing[3],
+                    paddingHorizontal: spacing[3],
                 },
                 style,
             ]}
         >
-            <Ionicons name={icon} size={28} color={iconColor} />
-            <Text
-                style={[
-                    styles.value,
-                    {
-                        color: colors.text.primary,
-                        marginTop: spacing[2],
-                        fontSize: typography.fontSize['3xl'],
-                    },
-                ]}
-            >
-                {value}
-            </Text>
+            <View style={styles.topRow}>
+                <Ionicons name={icon} size={20} color={iconColor} />
+                <Text
+                    style={[
+                        styles.value,
+                        {
+                            color: colors.text.primary,
+                            marginLeft: spacing[2],
+                            fontSize: typography.fontSize['2xl'],
+                        },
+                    ]}
+                >
+                    {value}
+                </Text>
+            </View>
             <Text
                 style={[
                     styles.label,
                     {
                         color: colors.text.secondary,
                         marginTop: spacing[1],
-                        fontSize: typography.fontSize.xs + 1,
+                        fontSize: typography.fontSize.xs,
                     },
                 ]}
             >
@@ -71,6 +74,11 @@ export function StatCard({
 const styles = StyleSheet.create({
     card: {
         flex: 1,
+        minHeight: 52,
+        justifyContent: 'center',
+    },
+    topRow: {
+        flexDirection: 'row',
         alignItems: 'center',
     },
     value: {
@@ -78,6 +86,5 @@ const styles = StyleSheet.create({
     },
     label: {
         fontWeight: '500',
-        textAlign: 'center',
     },
 });

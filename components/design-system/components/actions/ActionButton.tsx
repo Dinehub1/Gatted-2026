@@ -1,6 +1,7 @@
 /**
  * ActionButton Component
  * A prominent action button with icon, title, and subtitle
+ * Supports compact variant for secondary actions
  */
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
@@ -19,6 +20,8 @@ export interface ActionButtonProps {
     onPress: () => void;
     style?: ViewStyle;
     iconSize?: number;
+    /** Compact mode: 56px height, smaller icons, no subtitle */
+    compact?: boolean;
 }
 
 export function ActionButton({
@@ -30,7 +33,8 @@ export function ActionButton({
     backgroundColor,
     onPress,
     style,
-    iconSize = 32,
+    iconSize,
+    compact = false,
 }: ActionButtonProps) {
     const theme = useTheme();
     const { colors, borderRadius, spacing, shadows, typography } = theme;
@@ -45,6 +49,12 @@ export function ActionButton({
 
     const bgColor = backgroundColor || variantColors[variant];
 
+    // Compact mode dimensions
+    const buttonIconSize = iconSize ?? (compact ? 20 : 32);
+    const buttonPadding = compact ? spacing[3] : spacing[5];
+    const buttonRadius = compact ? borderRadius.lg : borderRadius.xl;
+    const buttonMinHeight = compact ? 56 : 90;
+
     return (
         <TouchableOpacity
             style={[
@@ -52,32 +62,41 @@ export function ActionButton({
                 shadows.md,
                 {
                     backgroundColor: bgColor,
-                    borderRadius: borderRadius.xl,
-                    padding: spacing[5],
-                    marginBottom: spacing[3],
+                    borderRadius: buttonRadius,
+                    padding: buttonPadding,
+                    marginBottom: spacing[2],
+                    minHeight: buttonMinHeight,
                 },
                 style,
             ]}
             onPress={onPress}
             activeOpacity={0.8}
         >
-            <View style={[styles.iconContainer, { marginRight: spacing[4] }]}>
-                <Ionicons name={icon} size={iconSize} color={colors.white} />
+            <View style={[styles.iconContainer, { marginRight: compact ? spacing[3] : spacing[4] }]}>
+                <Ionicons name={icon} size={buttonIconSize} color={colors.white} />
             </View>
             <View style={styles.content}>
                 <View style={styles.titleRow}>
-                    <Text style={[styles.title, { fontSize: typography.fontSize.xl }]}>{title}</Text>
+                    <Text style={[
+                        styles.title,
+                        {
+                            fontSize: compact ? typography.fontSize.lg : typography.fontSize.xl,
+                            marginBottom: compact ? 0 : 4,
+                        }
+                    ]}>
+                        {title}
+                    </Text>
                     {badge !== undefined && badge !== 0 && (
                         <View style={[styles.badge, { marginLeft: spacing[2] }]}>
                             <Text style={[styles.badgeText, { fontSize: typography.fontSize.sm }]}>{badge}</Text>
                         </View>
                     )}
                 </View>
-                {subtitle && (
+                {!compact && subtitle && (
                     <Text style={[styles.subtitle, { fontSize: typography.fontSize.md }]}>{subtitle}</Text>
                 )}
             </View>
-            <Ionicons name="chevron-forward" size={24} color={colors.white} />
+            <Ionicons name="chevron-forward" size={compact ? 20 : 24} color={colors.white} />
         </TouchableOpacity>
     );
 }
@@ -86,7 +105,6 @@ const styles = StyleSheet.create({
     button: {
         flexDirection: 'row',
         alignItems: 'center',
-        minHeight: 90,
     },
     iconContainer: {},
     content: {
@@ -99,7 +117,6 @@ const styles = StyleSheet.create({
     title: {
         fontWeight: 'bold',
         color: '#fff',
-        marginBottom: 4,
     },
     badge: {
         backgroundColor: 'rgba(255, 255, 255, 0.25)',

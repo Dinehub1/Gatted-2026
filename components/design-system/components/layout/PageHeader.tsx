@@ -43,7 +43,7 @@ export function PageHeader({
                 styles.header,
                 {
                     paddingHorizontal: spacing[5],
-                    paddingTop: 60,
+                    paddingTop: 52,
                     paddingBottom: spacing[5],
                     backgroundColor: colors.surface,
                     borderBottomColor: colors.border,
@@ -53,7 +53,7 @@ export function PageHeader({
         >
             {showBack && (
                 <TouchableOpacity onPress={onBack} style={[styles.backButton, { marginRight: spacing[3] }]}>
-                    <Ionicons name="arrow-back" size={24} color={colors.gray[800]} />
+                    <Ionicons name="arrow-back" size={20} color={colors.gray[800]} />
                 </TouchableOpacity>
             )}
             <View style={styles.headerLeft}>
@@ -73,7 +73,7 @@ export function PageHeader({
                 <TouchableOpacity onPress={secondaryRightAction.onPress} style={styles.actionButton}>
                     <Ionicons
                         name={secondaryRightAction.icon}
-                        size={24}
+                        size={20}
                         color={secondaryRightAction.color || colors.text.secondary}
                     />
                 </TouchableOpacity>
@@ -82,7 +82,7 @@ export function PageHeader({
                 <TouchableOpacity onPress={rightAction.onPress} style={styles.actionButton}>
                     <Ionicons
                         name={rightAction.icon}
-                        size={24}
+                        size={20}
                         color={rightAction.color || colors.danger.main}
                     />
                 </TouchableOpacity>
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     title: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: 'bold',
     },
     subtitle: {

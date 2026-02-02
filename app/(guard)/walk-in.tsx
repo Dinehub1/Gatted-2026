@@ -241,7 +241,8 @@ export default function WalkInVisitorScreen() {
                                 placeholderTextColor="#94a3b8"
                                 value={formatPhoneDisplay(visitorPhone)}
                                 onChangeText={handlePhoneChange}
-                                keyboardType="phone-pad"
+                                keyboardType="number-pad"
+                                autoFocus={true}
                                 maxLength={11} // 10 digits + 1 space
                                 editable={!isSubmitting}
                             />
@@ -418,73 +419,81 @@ export default function WalkInVisitorScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8fafc',
+        backgroundColor: '#FFFFFF',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingTop: 60,
-        paddingBottom: 16,
-        backgroundColor: '#fff',
+        paddingTop: 56,
+        paddingBottom: 12,
+        backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
-        borderBottomColor: '#e2e8f0',
+        borderBottomColor: '#EAEAEA',
     },
     backButton: {
-        padding: 8,
+        width: 40,
+        height: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     headerCenter: {
+        flex: 1,
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 18,
-        fontWeight: '700',
+        fontSize: 17,
+        fontWeight: '600',
         color: '#1e293b',
+        letterSpacing: -0.3,
     },
     headerSubtitle: {
         fontSize: 13,
-        color: '#64748b',
+        color: '#6b7280',
         marginTop: 2,
     },
     content: {
         flex: 1,
+        backgroundColor: '#FFFFFF',
     },
     form: {
-        padding: 20,
+        padding: 16,
     },
     inputGroup: {
-        marginBottom: 20,
+        marginBottom: 22,
     },
     label: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#334155',
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#1e293b',
         marginBottom: 8,
     },
     input: {
-        height: 52,
+        height: 50,
         borderWidth: 1,
         borderColor: '#e2e8f0',
         borderRadius: 12,
         paddingHorizontal: 16,
         fontSize: 16,
-        backgroundColor: '#fff',
+        backgroundColor: '#FFFFFF',
         color: '#1e293b',
     },
     phoneInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        height: 50,
         borderWidth: 1,
         borderColor: '#e2e8f0',
         borderRadius: 12,
-        backgroundColor: '#fff',
+        backgroundColor: '#FFFFFF',
         overflow: 'hidden',
     },
     phonePrefix: {
-        paddingHorizontal: 14,
-        paddingVertical: 14,
-        backgroundColor: '#f1f5f9',
+        paddingHorizontal: 12,
+        height: '100%',
+        justifyContent: 'center',
+        backgroundColor: '#f8fafc',
         borderRightWidth: 1,
         borderRightColor: '#e2e8f0',
     },
@@ -495,14 +504,14 @@ const styles = StyleSheet.create({
     },
     phoneInput: {
         flex: 1,
-        height: 52,
-        paddingHorizontal: 14,
+        height: '100%',
+        paddingHorizontal: 12,
         fontSize: 16,
         color: '#1e293b',
-        letterSpacing: 1,
+        letterSpacing: 0.5,
     },
     phoneLoader: {
-        marginRight: 14,
+        marginRight: 12,
     },
     errorText: {
         fontSize: 12,
@@ -532,21 +541,22 @@ const styles = StyleSheet.create({
     purposeChipsContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 10,
+        gap: 8,
     },
     purposeChip: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 14,
         paddingVertical: 10,
-        borderRadius: 20,
-        backgroundColor: '#fff',
+        borderRadius: 24,
+        backgroundColor: '#FFFFFF',
         borderWidth: 1,
         borderColor: '#e2e8f0',
         gap: 6,
+        minWidth: '30%',
     },
     purposeChipSelected: {
-        backgroundColor: '#eff6ff',
+        backgroundColor: '#3b82f6',
         borderColor: '#3b82f6',
     },
     purposeChipIcon: {
@@ -558,7 +568,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     purposeChipLabelSelected: {
-        color: '#3b82f6',
+        color: '#FFFFFF',
     },
     otherPurposeInput: {
         marginTop: 12,
@@ -589,19 +599,20 @@ const styles = StyleSheet.create({
     },
     submitButton: {
         flexDirection: 'row',
-        height: 56,
-        backgroundColor: '#22c55e',
+        height: 52,
+        backgroundColor: '#3b82f6',
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 8,
+        gap: 10,
+        marginTop: 8,
     },
     buttonDisabled: {
-        backgroundColor: '#94a3b8',
+        backgroundColor: '#cbd5e1',
     },
     submitButtonText: {
-        color: '#fff',
-        fontSize: 17,
+        color: '#FFFFFF',
+        fontSize: 16,
         fontWeight: '600',
     },
     entryTimeText: {
@@ -618,7 +629,7 @@ const styles = StyleSheet.create({
         padding: 24,
     },
     successCard: {
-        backgroundColor: '#fff',
+        backgroundColor: '#FFFFFF',
         borderRadius: 20,
         padding: 28,
         width: '100%',
@@ -664,7 +675,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     successButtonPrimaryText: {
-        color: '#fff',
+        color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '600',
     },

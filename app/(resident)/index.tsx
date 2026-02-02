@@ -1,19 +1,19 @@
-import { LoadingSpinner } from '@/components/LoadingSpinner';
 import {
     ActionButton,
     PageHeader,
     SectionTitle,
     StatCard,
     StatRow,
+    VisitorApprovalCard,
 } from '@/components';
-import { VisitorApprovalCard } from '@/components';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useAuth } from '@/contexts/auth-context';
 import { useVisitorApproval } from '@/hooks/useVisitorApproval';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type VisitorSummary = {
     upcoming: number;
@@ -136,12 +136,15 @@ export default function ResidentHome() {
         return <LoadingSpinner />;
     }
 
+    // Inline unit format: "Name • Unit"
+    const unitNumber = currentRole?.unit?.unit_number || 'N/A';
+    const displayName = `${profile?.full_name || 'Resident'} • ${unitNumber}`;
+
     return (
         <View style={styles.container}>
             <PageHeader
-                greeting="Welcome Back"
-                title={profile?.full_name || 'Resident'}
-                subtitle={`Unit: ${currentRole?.unit?.unit_number || 'N/A'}`}
+                greeting="Welcome back"
+                title={displayName}
                 secondaryRightAction={{
                     icon: 'notifications-outline',
                     color: pendingCount > 0 ? '#f59e0b' : '#64748b',
@@ -157,6 +160,7 @@ export default function ResidentHome() {
             <ScrollView
                 style={styles.content}
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />
                 }
@@ -166,7 +170,7 @@ export default function ResidentHome() {
                     <View style={styles.pendingSection}>
                         <View style={styles.pendingSectionHeader}>
                             <View style={styles.pendingTitleContainer}>
-                                <Ionicons name="hourglass-outline" size={20} color="#f59e0b" />
+                                <Ionicons name="hourglass-outline" size={18} color="#f59e0b" />
                                 <Text style={styles.pendingSectionTitle}>Pending Approvals</Text>
                             </View>
                             <View style={styles.pendingBadge}>
@@ -221,6 +225,7 @@ export default function ResidentHome() {
 
                 <SectionTitle>Quick Actions</SectionTitle>
 
+                {/* Primary action - kept big */}
                 <ActionButton
                     icon="qr-code"
                     title="Pre-approve Visitor"
@@ -229,56 +234,69 @@ export default function ResidentHome() {
                     onPress={() => router.push('/(resident)/pre-approve-visitor')}
                 />
 
+                {/* Secondary actions - compact mode */}
                 <ActionButton
                     icon="list-outline"
                     title="My Visitors"
-                    subtitle="View & manage visitors"
                     variant="success"
+                    compact
                     onPress={() => router.push('/(resident)/my-visitors')}
                 />
 
                 <ActionButton
                     icon="construct-outline"
                     title="My Issues"
-                    subtitle={`${issueSummary.open} open issues`}
-                    variant="danger"
+                    badge={issueSummary.open > 0 ? issueSummary.open : undefined}
+                    backgroundColor="#fecaca"
+                    compact
+                    style={{ backgroundColor: '#ef4444' }}
                     onPress={() => router.push('/(resident)/my-issues')}
                 />
 
                 <ActionButton
                     icon="cube-outline"
                     title="My Parcels"
-                    subtitle="Track your deliveries"
                     variant="warning"
+                    compact
                     onPress={() => router.push('/(resident)/my-parcels')}
                 />
 
                 <ActionButton
                     icon="megaphone-outline"
                     title="Announcements"
-                    subtitle="Society updates & news"
                     variant="info"
+                    compact
                     onPress={() => router.push('/(resident)/announcements')}
                 />
 
                 <ActionButton
                     icon="people-outline"
                     title="Manage Family"
-                    subtitle="Add members to unit"
                     backgroundColor="#64748b"
+                    compact
                     onPress={() => router.push('/(resident)/family')}
                 />
 
                 <ActionButton
                     icon="add-circle-outline"
                     title="Raise Issue"
-                    subtitle="Report a problem"
                     backgroundColor="#ef4444"
+                    compact
                     onPress={() => router.push('/(resident)/raise-issue')}
                 />
 
                 <View style={styles.spacer} />
             </ScrollView>
+
+            {/* Floating CTA */}
+            <TouchableOpacity
+                style={styles.floatingCta}
+                onPress={() => router.push('/(resident)/pre-approve-visitor')}
+                activeOpacity={0.9}
+            >
+                <Ionicons name="add" size={22} color="#fff" />
+                <Text style={styles.floatingCtaText}>Pre-approve Visitor</Text>
+            </TouchableOpacity>
         </View>
     );
 }
@@ -292,38 +310,64 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 20,
     },
+    scrollContent: {
+        paddingBottom: 80, // Space for floating CTA
+    },
     pendingSection: {
-        marginBottom: 16,
+        marginBottom: 12,
         marginTop: 8,
     },
     pendingSectionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 12,
+        marginBottom: 10,
     },
     pendingTitleContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: 6,
     },
     pendingSectionTitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '700',
         color: '#1e293b',
     },
     pendingBadge: {
         backgroundColor: '#f59e0b',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 10,
     },
     pendingBadgeText: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '700',
         color: '#fff',
     },
     spacer: {
-        height: 40,
+        height: 20,
+    },
+    floatingCta: {
+        position: 'absolute',
+        bottom: 24,
+        left: 20,
+        right: 20,
+        backgroundColor: '#3b82f6',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        borderRadius: 14,
+        gap: 8,
+        shadowColor: '#3b82f6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    floatingCtaText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '700',
     },
 });
