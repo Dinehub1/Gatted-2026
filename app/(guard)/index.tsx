@@ -1,23 +1,17 @@
+import { VisitorApprovalCard } from '@/components';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import {
     ActivityFeed,
     GuardPageHeader,
     ShiftControls,
 } from '@/components/guard';
-import {
-    ActionButton,
-    SectionTitle,
-    StatCard,
-    StatRow,
-} from '@/components';
-import { VisitorApprovalCard } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { useActivityFeed, useGuardDashboard, useGuardShift } from '@/hooks';
 import { useVisitorApproval } from '@/hooks/useVisitorApproval';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function GuardHome() {
     const { profile, currentRole } = useAuth();
@@ -123,7 +117,57 @@ export default function GuardHome() {
         return <LoadingSpinner />;
     }
 
-    const totalPendingApproval = pendingCount + approvedCount;
+    const QuickActionItem = ({
+        icon,
+        title,
+        color,
+        onPress,
+        badge
+    }: {
+        icon: keyof typeof Ionicons.glyphMap;
+        title: string;
+        color: string;
+        onPress: () => void;
+        badge?: number;
+    }) => (
+        <TouchableOpacity
+            style={styles.actionCard}
+            onPress={onPress}
+            activeOpacity={0.7}
+        >
+            <View style={[styles.actionIconContainer, { backgroundColor: `${color}15` }]}>
+                <Ionicons name={icon} size={28} color={color} />
+            </View>
+            <Text style={styles.actionTitle}>{title}</Text>
+            {badge ? (
+                <View style={[styles.actionBadge, { backgroundColor: color }]}>
+                    <Text style={styles.actionBadgeText}>{badge}</Text>
+                </View>
+            ) : null}
+        </TouchableOpacity>
+    );
+
+    const StatItem = ({
+        value,
+        label,
+        icon,
+        color,
+        bgColor
+    }: {
+        value: number | string;
+        label: string;
+        icon: keyof typeof Ionicons.glyphMap;
+        color: string;
+        bgColor: string;
+    }) => (
+        <View style={[styles.statItem, { backgroundColor: bgColor }]}>
+            <View style={styles.statHeader}>
+                <Text style={[styles.statValue, { color }]}>{value}</Text>
+                <Ionicons name={icon} size={20} color={color} />
+            </View>
+            <Text style={styles.statLabel}>{label}</Text>
+        </View>
+    );
 
     return (
         <View style={styles.container}>
@@ -142,50 +186,27 @@ export default function GuardHome() {
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10b981" />
                 }
+                contentContainerStyle={styles.scrollContent}
             >
-                {/* Pending Visitors Section - Shows visitors waiting for resident approval */}
-                {pendingCount > 0 && (
-                    <View style={styles.pendingSection}>
-                        <View style={styles.sectionHeader}>
-                            <View style={styles.sectionTitleContainer}>
-                                <Ionicons name="hourglass-outline" size={20} color="#f59e0b" />
-                                <Text style={styles.sectionHeaderTitle}>Waiting for Approval</Text>
-                            </View>
-                            <View style={[styles.badge, { backgroundColor: '#f59e0b' }]}>
-                                <Text style={styles.badgeText}>{pendingCount}</Text>
-                            </View>
-                        </View>
-                        {pendingVisitors.map((visitor) => (
-                            <VisitorApprovalCard
-                                key={visitor.id}
-                                visitor={{
-                                    id: visitor.id,
-                                    visitor_name: visitor.visitor_name,
-                                    visitor_phone: visitor.visitor_phone,
-                                    unit_number: visitor.unit_number,
-                                    purpose: visitor.purpose,
-                                    status: visitor.status,
-                                    created_at: visitor.created_at,
-                                }}
-                                role="guard"
-                            />
-                        ))}
-                    </View>
-                )}
+                {/* Check In / Approval Section */}
+                {(pendingCount > 0 || approvedCount > 0) && (
+                    <View style={styles.tasksSection}>
+                        {pendingCount > 0 && (
+                            <TouchableOpacity style={styles.taskBanner} activeOpacity={0.8}>
+                                <View style={styles.taskInfo}>
+                                    <View style={[styles.taskIcon, { backgroundColor: '#fff7ed' }]}>
+                                        <Ionicons name="hourglass" size={20} color="#f59e0b" />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.taskTitle}>Waiting for Approval</Text>
+                                        <Text style={styles.taskSubtitle}>{pendingCount} visitors waiting</Text>
+                                    </View>
+                                </View>
+                                <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                            </TouchableOpacity>
+                        )}
 
-                {/* Approved Visitors Section - Ready to check in */}
-                {approvedCount > 0 && (
-                    <View style={styles.approvedSection}>
-                        <View style={styles.sectionHeader}>
-                            <View style={styles.sectionTitleContainer}>
-                                <Ionicons name="checkmark-circle" size={20} color="#22c55e" />
-                                <Text style={styles.sectionHeaderTitle}>Ready to Check In</Text>
-                            </View>
-                            <View style={[styles.badge, { backgroundColor: '#22c55e' }]}>
-                                <Text style={styles.badgeText}>{approvedCount}</Text>
-                            </View>
-                        </View>
-                        {approvedVisitors.map((visitor) => (
+                        {approvedCount > 0 && approvedVisitors.map((visitor) => (
                             <VisitorApprovalCard
                                 key={visitor.id}
                                 visitor={{
@@ -204,91 +225,94 @@ export default function GuardHome() {
                     </View>
                 )}
 
-                <SectionTitle>Today at Gate</SectionTitle>
-
-                <StatRow>
-                    <StatCard
-                        icon="people-outline"
-                        iconColor="#3b82f6"
+                {/* Compact Stats Grid */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Overview</Text>
+                </View>
+                <View style={styles.statsGrid}>
+                    <StatItem
                         value={stats.visitorsToday}
-                        label="Visitors Today"
-                        backgroundColor="#dbeafe"
+                        label="Visitors"
+                        icon="people"
+                        color="#3b82f6"
+                        bgColor="#eff6ff"
                     />
-                    <StatCard
-                        icon="log-in-outline"
-                        iconColor="#10b981"
+                    <StatItem
                         value={stats.insideNow}
-                        label="Inside Now"
-                        backgroundColor="#d1fae5"
+                        label="Inside"
+                        icon="log-in"
+                        color="#10b981"
+                        bgColor="#ecfdf5"
                     />
-                </StatRow>
-
-                <StatRow>
-                    <StatCard
-                        icon="cube-outline"
-                        iconColor="#f59e0b"
+                    <StatItem
                         value={stats.pendingParcels}
-                        label="Pending Parcels"
-                        backgroundColor="#fef3c7"
+                        label="Parcels"
+                        icon="cube"
+                        color="#f59e0b"
+                        bgColor="#fffbeb"
                     />
-                    <StatCard
-                        icon="alert-circle-outline"
-                        iconColor="#ef4444"
+                    <StatItem
                         value={stats.openIssues}
-                        label="Open Issues"
-                        backgroundColor="#fee2e2"
+                        label="Issues"
+                        icon="alert-circle"
+                        color="#ef4444"
+                        bgColor="#fef2f2"
                     />
-                </StatRow>
+                </View>
 
-                <SectionTitle>Quick Actions</SectionTitle>
+                {/* Quick Actions Grid */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Quick Actions</Text>
+                </View>
+                <View style={styles.actionsGrid}>
+                    <QuickActionItem
+                        title="New Entry"
+                        icon="person-add"
+                        color="#3b82f6"
+                        onPress={() => router.push('/(guard)/walk-in')}
+                    />
+                    <QuickActionItem
+                        title="Expected"
+                        icon="qr-code"
+                        color="#10b981"
+                        onPress={() => router.push('/(guard)/expected-visitor')}
+                    />
+                    <QuickActionItem
+                        title="Checkout"
+                        icon="log-out"
+                        color="#6366f1"
+                        onPress={() => router.push('/(guard)/checkout')}
+                    />
+                    <QuickActionItem
+                        title="Parcels"
+                        icon="cube"
+                        color="#f59e0b"
+                        badge={stats.pendingParcels > 0 ? stats.pendingParcels : undefined}
+                        onPress={() => router.push('/(guard)/parcels')}
+                    />
+                </View>
 
-                <ActionButton
-                    icon="person-add"
-                    iconSize={48}
-                    title="New Entry"
-                    subtitle="Log walk-in visitor"
-                    variant="primary"
-                    onPress={() => router.push('/(guard)/walk-in')}
-                />
-
-                <ActionButton
-                    icon="qr-code-outline"
-                    iconSize={48}
-                    title="Expected Visitor"
-                    subtitle="Verify pre-approved entry"
-                    variant="success"
-                    onPress={() => router.push('/(guard)/expected-visitor')}
-                />
-
-                <ActionButton
-                    icon="log-out-outline"
-                    iconSize={48}
-                    title="Checkout Visitor"
-                    subtitle="Mark visitor exit"
-                    variant="info"
-                    onPress={() => router.push('/(guard)/checkout')}
-                />
-
-                <ActionButton
-                    icon="cube"
-                    iconSize={48}
-                    title="Parcels"
-                    subtitle="Log & track deliveries"
-                    variant="warning"
-                    badge={stats.pendingParcels > 0 ? stats.pendingParcels : undefined}
-                    onPress={() => router.push('/(guard)/parcels')}
-                />
-
-                <ActionButton
-                    icon="warning"
-                    iconSize={48}
-                    title="Emergency Alert"
-                    subtitle="Notify managers immediately"
-                    variant="danger"
+                {/* Emergency Button - Full Width */}
+                <TouchableOpacity
+                    style={styles.emergencyButton}
                     onPress={handleEmergency}
-                />
+                    activeOpacity={0.8}
+                >
+                    <View style={styles.emergencyContent}>
+                        <View style={styles.emergencyIcon}>
+                            <Ionicons name="warning" size={24} color="#ef4444" />
+                        </View>
+                        <View>
+                            <Text style={styles.emergencyTitle}>Emergency Alert</Text>
+                            <Text style={styles.emergencySubtitle}>Notify residents & admin</Text>
+                        </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#ef4444" />
+                </TouchableOpacity>
 
-                <SectionTitle>Recent Activity</SectionTitle>
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Recent</Text>
+                </View>
 
                 <ActivityFeed
                     activities={activities}
@@ -317,42 +341,172 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        paddingHorizontal: 20,
     },
-    pendingSection: {
-        marginBottom: 16,
-        marginTop: 8,
-    },
-    approvedSection: {
-        marginBottom: 16,
+    scrollContent: {
+        padding: 16,
     },
     sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        marginTop: 20,
         marginBottom: 12,
     },
-    sectionTitleContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    sectionHeaderTitle: {
+    sectionTitle: {
         fontSize: 16,
         fontWeight: '700',
         color: '#1e293b',
     },
-    badge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
+
+    // Stats Grid
+    statsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+    },
+    statItem: {
+        width: '48%', // Approx half with gap
+        padding: 12,
         borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.03)',
     },
-    badgeText: {
-        fontSize: 13,
+    statHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    statValue: {
+        fontSize: 24,
         fontWeight: '700',
-        color: '#fff',
     },
-    spacer: {
+    statLabel: {
+        fontSize: 13,
+        color: '#64748b',
+        fontWeight: '500',
+    },
+
+    // Actions Grid
+    actionsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+    },
+    actionCard: {
+        width: '48%',
+        backgroundColor: '#fff',
+        padding: 16,
+        borderRadius: 16,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
+        position: 'relative',
+    },
+    actionIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
+    },
+    actionTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#334155',
+        textAlign: 'center',
+    },
+    actionBadge: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 10,
+    },
+    actionBadgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: '700',
+    },
+
+    // Emergency
+    emergencyButton: {
+        marginTop: 20,
+        backgroundColor: '#fef2f2',
+        borderRadius: 16,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderWidth: 1,
+        borderColor: '#fecaca',
+    },
+    emergencyContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    emergencyIcon: {
+        width: 40,
         height: 40,
+        borderRadius: 20,
+        backgroundColor: '#fee2e2',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emergencyTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#ef4444',
+    },
+    emergencySubtitle: {
+        fontSize: 12,
+        color: '#f87171',
+    },
+
+    // Tasks / Pending
+    tasksSection: {
+        marginBottom: 8,
+    },
+    taskBanner: {
+        backgroundColor: '#fff',
+        padding: 12,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    taskInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    taskIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    taskTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#334155',
+    },
+    taskSubtitle: {
+        fontSize: 12,
+        color: '#64748b',
+    },
+
+    spacer: {
+        height: 48,
     },
 });

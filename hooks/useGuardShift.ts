@@ -59,10 +59,29 @@ export function useGuardShift({ guardId, societyId }: UseGuardShiftOptions) {
                 throw shiftError;
             }
 
-            setCurrentShift(data || null);
-
+            // Check for stale shift (older than 12 hours)
             if (data?.shift_start) {
-                setShiftDuration(calculateDuration(new Date(data.shift_start)));
+                const shiftStartTime = new Date(data.shift_start);
+                const now = new Date();
+                const diffHours = (now.getTime() - shiftStartTime.getTime()) / (1000 * 60 * 60);
+
+                if (diffHours > 12) {
+                    // Auto-end stale shift
+                    console.log('Auto-ending stale shift:', data.id, 'Duration:', diffHours.toFixed(1), 'hours');
+                    await supabase
+                        .from('guard_shifts')
+                        .update({ shift_end: now.toISOString() })
+                        .eq('id', data.id);
+
+                    setCurrentShift(null);
+                    setShiftDuration('');
+                    return;
+                }
+
+                setCurrentShift(data);
+                setShiftDuration(calculateDuration(shiftStartTime));
+            } else {
+                setCurrentShift(data || null);
             }
         } catch (err: any) {
             console.error('Error loading current shift:', err);

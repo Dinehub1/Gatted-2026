@@ -107,6 +107,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     signOut: async () => {
         try {
+            // End any active guard shift before signing out
+            const state = get();
+            if (state.profile?.id && state.currentRole?.society_id) {
+                const { data: activeShift } = await supabase
+                    .from('guard_shifts')
+                    .select('id')
+                    .eq('guard_id', state.profile.id)
+                    .eq('society_id', state.currentRole.society_id)
+                    .is('shift_end', null)
+                    .limit(1)
+                    .single();
+
+                if (activeShift) {
+                    await supabase
+                        .from('guard_shifts')
+                        .update({ shift_end: new Date().toISOString() })
+                        .eq('id', activeShift.id);
+                }
+            }
+
             await authApi.signOut();
             await AsyncStorage.removeItem('gated_current_role');
 
