@@ -42,7 +42,7 @@ export default function ForgotPasswordScreen() {
                     </View>
                     <Text style={styles.successTitle}>Check Your Email</Text>
                     <Text style={styles.successMessage}>
-                        We've sent password reset instructions to{'\n'}
+                        We&apos;ve sent password reset instructions to{'\n'}
                         <Text style={styles.emailHighlight}>{email}</Text>
                     </Text>
                     <Button
@@ -82,7 +82,7 @@ export default function ForgotPasswordScreen() {
                     </View>
                     <Text style={styles.title}>Forgot Password?</Text>
                     <Text style={styles.subtitle}>
-                        No worries! Enter your email and we'll send you reset instructions.
+                        No worries! Enter your email and we&apos;ll send you reset instructions.
                     </Text>
                 </View>
 

@@ -245,7 +245,7 @@ export default function ExpectedVisitorScreen() {
                                 <View style={styles.scannerOverlay}>
                                     <View style={styles.scannerFrame} />
                                 </View>
-                                <Text style={styles.scannerHint}>Point camera at visitor's QR code</Text>
+                                <Text style={styles.scannerHint}>Point camera at visitor&apos;s QR code</Text>
                             </View>
                         )}
                     </View>
@@ -253,7 +253,7 @@ export default function ExpectedVisitorScreen() {
 
                 {/* Expected Visitors List */}
                 <View style={styles.listSection}>
-                    <Text style={styles.sectionTitle}>Today's Expected Visitors ({expectedVisitors.length})</Text>
+                    <Text style={styles.sectionTitle}>Today&apos;s Expected Visitors ({expectedVisitors.length})</Text>
 
                     {loadingVisitors ? (
                         <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 20 }} />

@@ -38,6 +38,12 @@ export function logError(error: Error | unknown, message?: string, options?: Err
 export function handleApiError(error: any): string {
     // Supabase error handling
     if (error?.message) {
+        if (error.message.includes('Network request failed')) {
+            return 'Backend is unreachable. Check your Supabase URL or internet connection.';
+        }
+        if (error.message.includes('Unexpected character: <') || error.message.includes('JSON Parse error')) {
+            return 'Backend returned HTML instead of API JSON. Check EXPO_PUBLIC_SUPABASE_URL.';
+        }
         // Common Supabase errors
         if (error.message.includes('JWT')) {
             return 'Your session has expired. Please log in again.';

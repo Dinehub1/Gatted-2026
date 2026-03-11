@@ -2,9 +2,8 @@ import { Branding } from '@/constants/branding';
 import { useAuth } from '@/contexts/auth-context';
 import { useAuthStore } from '@/stores/auth.store';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Button, Image, InputAccessoryView, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 export default function LoginScreen() {
     const [phone, setPhone] = useState('');
@@ -13,7 +12,7 @@ export default function LoginScreen() {
     const [isLoading, setIsLoading] = useState(false);
 
     const { signInWithOTP, verifyOTP } = useAuth();
-    const router = useRouter();
+    const inputAccessoryViewID = 'uniqueID';
 
     const handleSendOTP = async () => {
         // Remove any spaces or dashes from phone
@@ -67,154 +66,184 @@ export default function LoginScreen() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.content}>
-                {/* Logo Section */}
-                <View style={styles.logoContainer}>
-                    <Image
-                        source={Branding.assets.icon}
-                        style={styles.logoImage}
-                        resizeMode="contain"
-                    />
-                    <Text style={styles.logoText}>{Branding.appName}</Text>
-                    <Text style={styles.tagline}>{Branding.tagline}</Text>
-                </View>
-
-                {/* Title */}
-                <Text style={styles.title}>
-                    {step === 'phone' ? 'Welcome Back' : 'Verify OTP'}
-                </Text>
-                <Text style={styles.subtitle}>
-                    {step === 'phone'
-                        ? 'Enter your phone number to continue'
-                        : `Enter the 6-digit code sent to +91 ${phone}`}
-                </Text>
-
-                {step === 'phone' ? (
-                    <>
-                        {/* Phone Input with +91 prefix */}
-                        <View style={styles.phoneInputContainer}>
-                            <View style={styles.prefixContainer}>
-                                <Text style={styles.flagEmoji}>🇮🇳</Text>
-                                <Text style={styles.prefixText}>+91</Text>
+            <KeyboardAvoidingView
+                style={styles.keyboardAvoidingView}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={false}
+                        bounces={false}
+                    >
+                        <View style={styles.innerContent}>
+                            {/* Logo Section */}
+                            <View style={styles.logoContainer}>
+                                <Image
+                                    source={Branding.assets.icon}
+                                    style={styles.logoImage}
+                                    resizeMode="contain"
+                                />
+                                <Text style={styles.logoText}>{Branding.appName}</Text>
+                                <Text style={styles.tagline}>{Branding.tagline}</Text>
                             </View>
-                            <TextInput
-                                style={styles.phoneInput}
-                                placeholder="Enter 10-digit number"
-                                placeholderTextColor="#9ca3af"
-                                value={phone}
-                                onChangeText={(text) => setPhone(text.replace(/[^0-9]/g, ''))}
-                                keyboardType="phone-pad"
-                                maxLength={10}
-                                editable={!isLoading}
-                            />
+
+                            {/* Title */}
+                            <Text style={styles.title}>
+                                {step === 'phone' ? 'Welcome Back (v2)' : 'Verify OTP'}
+                            </Text>
+                            <Text style={styles.subtitle}>
+                                {step === 'phone'
+                                    ? 'Enter your phone number to continue'
+                                    : `Enter the 6-digit code sent to +91 ${phone}`}
+                            </Text>
+
+                            {step === 'phone' ? (
+                                <>
+                                    {/* Phone Input with +91 prefix */}
+                                    <View style={styles.phoneInputContainer}>
+                                        <View style={styles.prefixContainer}>
+                                            <Text style={styles.flagEmoji}>🇮🇳</Text>
+                                            <Text style={styles.prefixText}>+91</Text>
+                                        </View>
+                                        <TextInput
+                                            style={styles.phoneInput}
+                                            placeholder="Enter 10-digit number"
+                                            placeholderTextColor="#9ca3af"
+                                            value={phone}
+                                            onChangeText={(text) => {
+                                                const cleaned = text.replace(/[^0-9]/g, '');
+                                                setPhone(cleaned);
+                                                if (cleaned.length === 10) {
+                                                    Keyboard.dismiss();
+                                                }
+                                            }}
+                                            keyboardType="phone-pad"
+                                            maxLength={10}
+                                            editable={!isLoading}
+                                            returnKeyType="done"
+                                            inputAccessoryViewID={inputAccessoryViewID}
+                                        />
+                                    </View>
+
+                                    <TouchableOpacity
+                                        style={[styles.button, isLoading && styles.buttonDisabled]}
+                                        onPress={handleSendOTP}
+                                        disabled={isLoading}
+                                        activeOpacity={0.8}
+                                    >
+                                        {isLoading ? (
+                                            <ActivityIndicator color="#fff" />
+                                        ) : (
+                                            <>
+                                                <Ionicons name="send" size={20} color="#fff" style={{ marginRight: 8 }} />
+                                                <Text style={styles.buttonText}>Send OTP via WhatsApp</Text>
+                                            </>
+                                        )}
+                                    </TouchableOpacity>
+                                </>
+                            ) : (
+                                <>
+                                    {/* OTP Input */}
+                                    <TextInput
+                                        style={styles.otpInput}
+                                        placeholder="● ● ● ● ● ●"
+                                        placeholderTextColor="#d1d5db"
+                                        value={otp}
+                                        onChangeText={(text) => setOtp(text.replace(/[^0-9]/g, ''))}
+                                        keyboardType="number-pad"
+                                        maxLength={6}
+                                        editable={!isLoading}
+                                        autoFocus
+                                    />
+
+                                    <TouchableOpacity
+                                        style={[styles.button, isLoading && styles.buttonDisabled]}
+                                        onPress={handleVerifyOTP}
+                                        disabled={isLoading}
+                                        activeOpacity={0.8}
+                                    >
+                                        {isLoading ? (
+                                            <ActivityIndicator color="#fff" />
+                                        ) : (
+                                            <>
+                                                <Ionicons name="checkmark-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
+                                                <Text style={styles.buttonText}>Verify & Continue</Text>
+                                            </>
+                                        )}
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={styles.linkButton}
+                                        onPress={() => {
+                                            setStep('phone');
+                                            setOtp('');
+                                        }}
+                                        disabled={isLoading}
+                                    >
+                                        <Ionicons name="arrow-back" size={16} color="#2563eb" />
+                                        <Text style={styles.linkText}>Change Phone Number</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={styles.resendButton}
+                                        onPress={handleSendOTP}
+                                        disabled={isLoading}
+                                    >
+                                        <Text style={styles.resendText}>Didn&apos;t receive OTP? Resend</Text>
+                                    </TouchableOpacity>
+                                </>
+                            )}
                         </View>
+                    </ScrollView>
+                </TouchableWithoutFeedback>
 
-                        <TouchableOpacity
-                            style={[styles.button, isLoading && styles.buttonDisabled]}
-                            onPress={handleSendOTP}
-                            disabled={isLoading}
-                            activeOpacity={0.8}
-                        >
-                            {isLoading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <>
-                                    <Ionicons name="send" size={20} color="#fff" style={{ marginRight: 8 }} />
-                                    <Text style={styles.buttonText}>Send OTP via WhatsApp</Text>
-                                </>
-                            )}
-                        </TouchableOpacity>
-                    </>
-                ) : (
-                    <>
-                        {/* OTP Input */}
-                        <TextInput
-                            style={styles.otpInput}
-                            placeholder="● ● ● ● ● ●"
-                            placeholderTextColor="#d1d5db"
-                            value={otp}
-                            onChangeText={(text) => setOtp(text.replace(/[^0-9]/g, ''))}
-                            keyboardType="number-pad"
-                            maxLength={6}
-                            editable={!isLoading}
-                            autoFocus
-                        />
+                {/* Developer Login Shortcuts - Only visible in development */}
+                {__DEV__ && (
+                    <View style={styles.devSection}>
+                        <Text style={styles.devTitle}>Developer Access</Text>
+                        <View style={styles.devButtons}>
+                            <TouchableOpacity
+                                style={[styles.devButton, { backgroundColor: '#10b981' }]}
+                                onPress={() => useAuthStore.getState().devLogin('guard')}
+                            >
+                                <Text style={styles.devButtonText}>Guard</Text>
+                            </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={[styles.button, isLoading && styles.buttonDisabled]}
-                            onPress={handleVerifyOTP}
-                            disabled={isLoading}
-                            activeOpacity={0.8}
-                        >
-                            {isLoading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <>
-                                    <Ionicons name="checkmark-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
-                                    <Text style={styles.buttonText}>Verify & Continue</Text>
-                                </>
-                            )}
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.devButton, { backgroundColor: '#3b82f6' }]}
+                                onPress={() => useAuthStore.getState().devLogin('resident')}
+                            >
+                                <Text style={styles.devButtonText}>Resident</Text>
+                            </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={styles.linkButton}
-                            onPress={() => {
-                                setStep('phone');
-                                setOtp('');
-                            }}
-                            disabled={isLoading}
-                        >
-                            <Ionicons name="arrow-back" size={16} color="#2563eb" />
-                            <Text style={styles.linkText}>Change Phone Number</Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.devButton, { backgroundColor: '#8b5cf6' }]}
+                                onPress={() => useAuthStore.getState().devLogin('manager')}
+                            >
+                                <Text style={styles.devButtonText}>Manager</Text>
+                            </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={styles.resendButton}
-                            onPress={handleSendOTP}
-                            disabled={isLoading}
-                        >
-                            <Text style={styles.resendText}>Didn't receive OTP? Resend</Text>
-                        </TouchableOpacity>
-                    </>
-                )}
-            </View>
-
-            {/* Developer Login Shortcuts - Only visible in development */}
-            {__DEV__ && (
-                <View style={styles.devSection}>
-                    <Text style={styles.devTitle}>Developer Access</Text>
-                    <View style={styles.devButtons}>
-                        <TouchableOpacity
-                            style={[styles.devButton, { backgroundColor: '#10b981' }]}
-                            onPress={() => useAuthStore.getState().devLogin('guard')}
-                        >
-                            <Text style={styles.devButtonText}>Guard</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.devButton, { backgroundColor: '#3b82f6' }]}
-                            onPress={() => useAuthStore.getState().devLogin('resident')}
-                        >
-                            <Text style={styles.devButtonText}>Resident</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.devButton, { backgroundColor: '#8b5cf6' }]}
-                            onPress={() => useAuthStore.getState().devLogin('manager')}
-                        >
-                            <Text style={styles.devButtonText}>Manager</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.devButton, { backgroundColor: '#f59e0b' }]}
-                            onPress={() => useAuthStore.getState().devLogin('admin')}
-                        >
-                            <Text style={styles.devButtonText}>Admin</Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.devButton, { backgroundColor: '#f59e0b' }]}
+                                onPress={() => useAuthStore.getState().devLogin('admin')}
+                            >
+                                <Text style={styles.devButtonText}>Admin</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.devNote}>Uses test credentials (email/password)</Text>
                     </View>
-                    <Text style={styles.devNote}>Uses test credentials (email/password)</Text>
-                </View>
-            )}
+                )}
+                {Platform.OS === 'ios' && (
+                    <InputAccessoryView nativeID={inputAccessoryViewID}>
+                        <View style={styles.accessory}>
+                            <Button onPress={() => Keyboard.dismiss()} title="Done" />
+                        </View>
+                    </InputAccessoryView>
+                )}
+            </KeyboardAvoidingView>
         </View>
     );
 }
@@ -224,10 +253,17 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#ffffff',
     },
-    content: {
+    keyboardAvoidingView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+    },
+    innerContent: {
         flex: 1,
         justifyContent: 'center',
         paddingHorizontal: 24,
+        paddingBottom: 40,
     },
     logoContainer: {
         alignItems: 'center',
@@ -395,5 +431,14 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 10,
         color: '#94a3b8',
+    },
+    accessory: {
+        width: '100%',
+        height: 48,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        backgroundColor: '#f1f5f9',
+        paddingHorizontal: 8,
     },
 });

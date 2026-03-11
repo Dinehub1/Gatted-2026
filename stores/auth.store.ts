@@ -14,6 +14,147 @@ import { create } from 'zustand';
 
 export type { UserRoleData };
 
+function createOfflineDevSession(role: UserRoleType): {
+    session: AuthSession;
+    profile: Profile;
+    roles: UserRoleData[];
+} {
+    const now = new Date().toISOString();
+    const profiles: Record<UserRoleType, Profile> = {
+        guard: {
+            id: 'dev-guard-user',
+            phone: '+919999000001',
+            full_name: 'Dev Guard',
+            email: 'guard@test.com',
+            avatar_url: null,
+            created_at: now,
+            updated_at: now,
+        },
+        resident: {
+            id: 'dev-resident-user',
+            phone: '+919999000002',
+            full_name: 'Dev Resident',
+            email: 'resident@test.com',
+            avatar_url: null,
+            created_at: now,
+            updated_at: now,
+        },
+        manager: {
+            id: 'dev-manager-user',
+            phone: '+919999000003',
+            full_name: 'Dev Manager',
+            email: 'manager@test.com',
+            avatar_url: null,
+            created_at: now,
+            updated_at: now,
+        },
+        admin: {
+            id: 'dev-admin-user',
+            phone: '+919999000004',
+            full_name: 'Dev Admin',
+            email: 'admin@test.com',
+            avatar_url: null,
+            created_at: now,
+            updated_at: now,
+        },
+        owner: {
+            id: 'dev-owner-user',
+            phone: '+919999000002',
+            full_name: 'Dev Owner',
+            email: 'resident@test.com',
+            avatar_url: null,
+            created_at: now,
+            updated_at: now,
+        },
+        tenant: {
+            id: 'dev-tenant-user',
+            phone: '+919999000002',
+            full_name: 'Dev Tenant',
+            email: 'resident@test.com',
+            avatar_url: null,
+            created_at: now,
+            updated_at: now,
+        },
+    };
+
+    const roleData: Record<UserRoleType, UserRoleData> = {
+        guard: {
+            id: 'dev-guard-role',
+            role: 'guard',
+            society_id: 'dev-society-1',
+            unit_id: null,
+            society: { id: 'dev-society-1', name: 'Dev Society' },
+            unit: null,
+        },
+        resident: {
+            id: 'dev-resident-role',
+            role: 'resident',
+            society_id: 'dev-society-1',
+            unit_id: 'dev-unit-a101',
+            society: { id: 'dev-society-1', name: 'Dev Society' },
+            unit: { id: 'dev-unit-a101', unit_number: 'A-101' },
+        },
+        manager: {
+            id: 'dev-manager-role',
+            role: 'manager',
+            society_id: 'dev-society-1',
+            unit_id: null,
+            society: { id: 'dev-society-1', name: 'Dev Society' },
+            unit: null,
+        },
+        admin: {
+            id: 'dev-admin-role',
+            role: 'admin',
+            society_id: null,
+            unit_id: null,
+            society: null,
+            unit: null,
+        },
+        owner: {
+            id: 'dev-owner-role',
+            role: 'owner',
+            society_id: 'dev-society-1',
+            unit_id: 'dev-unit-a101',
+            society: { id: 'dev-society-1', name: 'Dev Society' },
+            unit: { id: 'dev-unit-a101', unit_number: 'A-101' },
+        },
+        tenant: {
+            id: 'dev-tenant-role',
+            role: 'tenant',
+            society_id: 'dev-society-1',
+            unit_id: 'dev-unit-a101',
+            society: { id: 'dev-society-1', name: 'Dev Society' },
+            unit: { id: 'dev-unit-a101', unit_number: 'A-101' },
+        },
+    };
+
+    const profile = profiles[role];
+    const currentRole = roleData[role];
+    const roles = [currentRole];
+    const session: AuthSession = {
+        token: `dev-offline-${role}`,
+        user: profile,
+        roles,
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+
+    return { session, profile, roles };
+}
+
+async function applyOfflineDevLogin(role: UserRoleType, set: (partial: Partial<AuthState>) => void) {
+    const { session, profile, roles } = createOfflineDevSession(role);
+    await AsyncStorage.setItem('gated_current_role', roles[0].id);
+    set({
+        session,
+        user: profile,
+        profile,
+        roles,
+        currentRole: roles[0],
+        isAuthenticated: true,
+        isLoading: false,
+    });
+}
+
 export interface AuthState {
     user: Profile | null;
     session: AuthSession | null;
@@ -195,22 +336,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             return;
         }
 
-        // Map roles to test phone numbers (set up matching profiles in DB)
-        const testPhones: Record<UserRoleType, string> = {
-            guard: '+919999000001',
-            resident: '+919999000002',
-            manager: '+919999000003',
-            admin: '+919999000004',
-            owner: '+919999000002',
-            tenant: '+919999000002',
-        };
-
-        const phone = testPhones[role];
-        if (!phone) {
-            console.error('No test phone for role:', role);
-            return;
-        }
-
         try {
             // In dev mode, try email/password login via Supabase Auth as fallback
             const credentials: Record<UserRoleType, { email: string; password: string }> = {
@@ -230,6 +355,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             if (error) {
                 logError(error, 'Dev login failed', { severity: 'low', context: { role } });
+                await applyOfflineDevLogin(role, set);
                 return;
             }
 
@@ -258,9 +384,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 if (roles && roles.length > 0) {
                     get().setCurrentRole(roles[0]);
                 }
+            } else {
+                await applyOfflineDevLogin(role, set);
             }
         } catch (error) {
             logError(error, 'Dev login exception', { severity: 'medium', context: { role } });
+            await applyOfflineDevLogin(role, set);
         }
     },
 

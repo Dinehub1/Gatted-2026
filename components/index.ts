@@ -9,7 +9,12 @@
  */
 
 // Design System - Portable, reusable components
-export * from './design-system';
+export * from './design-system/theme';
+export * from './design-system/components/actions';
+export * from './design-system/components/feedback';
+export * from './design-system/components/layout';
+export { StatCard, ListItem } from './design-system/components/data-display';
+export { Button, DateInput, SelectInput, TextInput } from './design-system/components/primitives';
 
 // Features - App-specific components
 export * from './features';
@@ -20,4 +25,3 @@ export { EmptyState } from './EmptyState';
 export { ErrorBoundary } from './ErrorBoundary';
 export { LoadingSpinner } from './LoadingSpinner';
 export { QRCodeDisplay } from './QRCodeDisplay';
-
