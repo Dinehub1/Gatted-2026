@@ -14,7 +14,7 @@ export function ShiftStatusBadge({ isActive, duration }: ShiftStatusBadgeProps) 
             <Text style={[styles.text, isActive ? styles.activeText : styles.inactiveText]}>
                 {isActive ? `Active${duration ? ` • ${duration}` : ''}` : 'Off Duty'}
             </Text>
-            {isActive && <Ionicons name="time-outline" size={14} color="#059669" style={styles.icon} />}
+            {isActive && <Ionicons name="time-outline" size={14} color="#A3E635" style={styles.icon} />}
         </View>
     );
 }
@@ -30,10 +30,14 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
     },
     activeBadge: {
-        backgroundColor: '#d1fae5',
+        backgroundColor: 'rgba(163, 230, 53, 0.16)',
+        borderWidth: 1,
+        borderColor: 'rgba(163, 230, 53, 0.35)',
     },
     inactiveBadge: {
-        backgroundColor: '#f1f5f9',
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.12)',
     },
     dot: {
         width: 8,
@@ -42,20 +46,20 @@ const styles = StyleSheet.create({
         marginRight: 6,
     },
     activeDot: {
-        backgroundColor: '#10b981',
+        backgroundColor: '#A3E635',
     },
     inactiveDot: {
-        backgroundColor: '#94a3b8',
+        backgroundColor: '#8B97AD',
     },
     text: {
         fontSize: 13,
         fontWeight: '600',
     },
     activeText: {
-        color: '#059669',
+        color: '#A3E635',
     },
     inactiveText: {
-        color: '#64748b',
+        color: '#B7C0D1',
     },
     icon: {
         marginLeft: 4,

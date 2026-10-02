@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -35,11 +35,8 @@ export default function FamilyManagement() {
     const [newMemberPhone, setNewMemberPhone] = useState('');
     const [adding, setAdding] = useState(false);
 
-    useEffect(() => {
-        fetchMembers();
-    }, [currentRole]);
 
-    const fetchMembers = async () => {
+    const fetchMembers = useCallback(async () => {
         if (!currentRole?.unit_id) return;
         setLoading(true);
         try {
@@ -60,7 +57,11 @@ export default function FamilyManagement() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentRole]);
+
+    useEffect(() => {
+        fetchMembers();
+    }, [currentRole, fetchMembers]);
 
     const handleAddMember = async () => {
         if (!newMemberPhone) return;
@@ -141,7 +142,7 @@ export default function FamilyManagement() {
                                 .eq('id', memberId);
                             if (error) throw error;
                             fetchMembers();
-                        } catch (error) {
+                        } catch {
                             Alert.alert('Error', 'Failed to remove member');
                         }
                     }

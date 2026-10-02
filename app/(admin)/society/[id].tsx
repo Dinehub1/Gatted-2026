@@ -3,7 +3,7 @@ import ContextMenu from '@/components/admin/ContextMenu';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -47,13 +47,8 @@ export default function SocietyBlocks() {
     const [blockName, setBlockName] = useState('');
     const [blockFloors, setBlockFloors] = useState('');
 
-    useEffect(() => {
-        if (id) {
-            fetchData();
-        }
-    }, [id]);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             // Fetch society info
             const { data: societyData } = await supabase
@@ -90,7 +85,13 @@ export default function SocietyBlocks() {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        if (id) {
+            fetchData();
+        }
+    }, [id, fetchData]);
 
     const handleRefresh = () => {
         setRefreshing(true);

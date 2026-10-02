@@ -5,7 +5,7 @@ import type { Parcel as ParcelType } from '@/types';
 import { showConfirm, showError, showSuccess } from '@/utils';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
@@ -38,19 +38,14 @@ export default function ParcelsScreen() {
     const [trackingNumber, setTrackingNumber] = useState('');
     const [description, setDescription] = useState('');
 
-    useEffect(() => {
-        if (currentRole?.society_id) {
-            loadParcels();
-        }
-    }, [currentRole?.society_id]);
 
-    const loadParcels = async () => {
+    const loadParcels = useCallback(async (isRefresh = false) => {
         if (!currentRole?.society_id) {
             console.log('No society_id found');
             return;
         }
 
-        if (!refreshing) setIsLoading(true);
+        if (!isRefresh) setIsLoading(true);
         try {
             const { data, error } = await supabase
                 .from('parcels')
@@ -93,11 +88,17 @@ export default function ParcelsScreen() {
             setIsLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [currentRole?.society_id]);
+
+    useEffect(() => {
+        if (currentRole?.society_id) {
+            loadParcels();
+        }
+    }, [currentRole?.society_id, loadParcels]);
 
     const onRefresh = () => {
         setRefreshing(true);
-        loadParcels();
+        loadParcels(true);
     };
 
     const handleUnitSelect = (unitId: string, unitNumber: string) => {
@@ -189,7 +190,7 @@ export default function ParcelsScreen() {
                     if (error) throw error;
                     showSuccess('Parcel marked as collected');
                     loadParcels();
-                } catch (err) {
+                } catch {
                     showError('Failed to update parcel');
                 }
             },

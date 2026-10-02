@@ -2,7 +2,7 @@ import { PageHeader } from '@/components';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
@@ -24,13 +24,8 @@ export default function AddSociety() {
     const [societyName, setSocietyName] = useState('');
     const [city, setCity] = useState('');
 
-    useEffect(() => {
-        if (id) {
-            fetchSociety();
-        }
-    }, [id]);
 
-    const fetchSociety = async () => {
+    const fetchSociety = useCallback(async () => {
         try {
             const { data, error } = await supabase
                 .from('societies')
@@ -46,7 +41,13 @@ export default function AddSociety() {
         } catch (error) {
             console.error('Error fetching society:', error);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        if (id) {
+            fetchSociety();
+        }
+    }, [id, fetchSociety]);
 
     const handleSave = async () => {
         if (!societyName.trim()) {

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { showError, showSuccess } from '@/utils';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Issue = {
@@ -31,7 +31,7 @@ export default function IssuesScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [filter, setFilter] = useState<'all' | 'open' | 'in-progress'>('open');
 
-    const loadIssues = async () => {
+    const loadIssues = useCallback(async () => {
         try {
             const societyId = currentRole?.society_id;
             if (!societyId) return;
@@ -66,11 +66,12 @@ export default function IssuesScreen() {
             setIsLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [currentRole?.society_id, filter]);
 
     useEffect(() => {
         loadIssues();
-    }, [currentRole?.society_id, filter]);
+    }, [currentRole?.society_id, filter, loadIssues]);
+
 
     const onRefresh = () => {
         setRefreshing(true);

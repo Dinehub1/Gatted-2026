@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Modal,
@@ -56,11 +56,6 @@ export function UnitSelector({
     const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
 
     // Load units when modal opens
-    useEffect(() => {
-        if (isOpen && societyId) {
-            loadUnits();
-        }
-    }, [isOpen, societyId]);
 
     // Set display value from external value
     useEffect(() => {
@@ -70,7 +65,7 @@ export function UnitSelector({
         }
     }, [value, units]);
 
-    const loadUnits = async () => {
+    const loadUnits = useCallback(async () => {
         setIsLoading(true);
         try {
             // Join with blocks table to get block name
@@ -118,7 +113,13 @@ export function UnitSelector({
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [societyId]);
+
+    useEffect(() => {
+        if (isOpen && societyId) {
+            loadUnits();
+        }
+    }, [isOpen, societyId, loadUnits]);
 
     // Extract unique blocks
     const blocks = useMemo(() => {

@@ -1,6 +1,7 @@
 /**
  * StatCard Component
- * A compact card for displaying statistics with an icon (horizontal layout)
+ * A compact card for displaying statistics with an icon (horizontal layout).
+ * White surface with a tinted icon chip — `backgroundColor` tints the chip.
  */
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
@@ -32,8 +33,9 @@ export function StatCard({
             style={[
                 styles.card,
                 {
-                    backgroundColor,
-                    borderRadius: 10,
+                    backgroundColor: colors.white,
+                    borderColor: colors.gray[200],
+                    borderRadius: 14,
                     paddingVertical: spacing[3],
                     paddingHorizontal: spacing[3],
                 },
@@ -41,7 +43,9 @@ export function StatCard({
             ]}
         >
             <View style={styles.topRow}>
-                <Ionicons name={icon} size={20} color={iconColor} />
+                <View style={[styles.iconChip, { backgroundColor }]}>
+                    <Ionicons name={icon} size={16} color={iconColor} />
+                </View>
                 <Text
                     style={[
                         styles.value,
@@ -76,10 +80,23 @@ const styles = StyleSheet.create({
         flex: 1,
         minHeight: 52,
         justifyContent: 'center',
+        borderWidth: 1,
+        shadowColor: '#0f172a',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        elevation: 2,
     },
     topRow: {
         flexDirection: 'row',
         alignItems: 'center',
+    },
+    iconChip: {
+        width: 30,
+        height: 30,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     value: {
         fontWeight: 'bold',

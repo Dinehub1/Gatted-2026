@@ -10,7 +10,7 @@ import {
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 type VisitorStats = {
@@ -27,14 +27,14 @@ type IssueStats = {
 
 export default function ManagerHome() {
     const router = useRouter();
-    const { signOut, profile, currentRole } = useAuth();
+    const { profile, currentRole } = useAuth();
 
     const [visitorStats, setVisitorStats] = useState<VisitorStats>({ total: 0, today: 0, pending: 0 });
     const [issueStats, setIssueStats] = useState<IssueStats>({ total: 0, open: 0, inProgress: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    const loadStats = async () => {
+    const loadStats = useCallback(async () => {
         try {
             const societyId = currentRole?.society_id;
             if (!societyId) return;
@@ -73,19 +73,16 @@ export default function ManagerHome() {
             setIsLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [currentRole?.society_id]);
 
     useEffect(() => {
         loadStats();
-    }, [currentRole?.society_id]);
+    }, [currentRole?.society_id, loadStats]);
+
 
     const onRefresh = () => {
         setRefreshing(true);
         loadStats();
-    };
-
-    const handleCreateAnnouncement = () => {
-        router.push('/(manager)/create-announcement');
     };
 
     if (isLoading) {
@@ -159,7 +156,6 @@ export default function ManagerHome() {
                     icon="megaphone"
                     title="Manage Announcements"
                     variant="info"
-                    backgroundColor="#8b5cf6"
                     onPress={() => router.push('/(manager)/announcements')}
                 />
 

@@ -4,106 +4,87 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 jest.mock('@/lib/supabase');
 
+// Rows as returned by the units query with the joined blocks relation
+const mockUnitRows = [
+    { id: 'unit-1', unit_number: 'A-101', floor: 1, block_id: 'block-1', blocks: { id: 'block-1', name: 'A' } },
+    { id: 'unit-2', unit_number: 'A-102', floor: 1, block_id: 'block-1', blocks: { id: 'block-1', name: 'A' } },
+    { id: 'unit-3', unit_number: 'B-201', floor: 2, block_id: 'block-2', blocks: { id: 'block-2', name: 'B' } },
+];
+
+// Builds a thenable query chain so select/eq/order can be chained and awaited
+function mockUnitsQuery(result: { data: any; error: any }) {
+    const chain: any = {
+        select: jest.fn(() => chain),
+        eq: jest.fn(() => chain),
+        order: jest.fn(() => chain),
+        then: (resolve: any, reject: any) => Promise.resolve(result).then(resolve, reject),
+    };
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+    return chain;
+}
+
 describe('UnitSelector', () => {
     const mockOnSelect = jest.fn();
     const mockSocietyId = 'society-123';
 
-    const mockBlocks = [
-        { id: 'block-1', name: 'Block A', total_floors: 5 },
-        { id: 'block-2', name: 'Block B', total_floors: 4 },
-    ];
-
-    const mockUnits = [
-        { id: 'unit-1', unit_number: 'A-101', block_id: 'block-1', floor: 1 },
-        { id: 'unit-2', unit_number: 'A-102', block_id: 'block-1', floor: 1 },
-    ];
-
     beforeEach(() => {
         jest.clearAllMocks();
-
-        // Mock Supabase queries
-        (supabase.from as jest.Mock).mockImplementation((table: string) => {
-            if (table === 'blocks') {
-                return {
-                    select: jest.fn().mockReturnThis(),
-                    eq: jest.fn().mockResolvedValue({ data: mockBlocks, error: null }),
-                };
-            }
-            if (table === 'units') {
-                return {
-                    select: jest.fn().mockReturnThis(),
-                    eq: jest.fn().mockReturnThis(),
-                    order: jest.fn().mockResolvedValue({ data: mockUnits, error: null }),
-                };
-            }
-            return {
-                select: jest.fn().mockReturnThis(),
-                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
-            };
-        });
+        mockUnitsQuery({ data: mockUnitRows, error: null });
     });
 
-    it('should render block selector initially', async () => {
+    it('should render placeholder before a unit is selected', () => {
         const { getByText } = render(
             <UnitSelector societyId={mockSocietyId} onSelect={mockOnSelect} />
         );
+
+        expect(getByText('Select Unit')).toBeTruthy();
+    });
+
+    it('should load units and show blocks when opened', async () => {
+        const { getByText } = render(
+            <UnitSelector societyId={mockSocietyId} onSelect={mockOnSelect} />
+        );
+
+        fireEvent.press(getByText('Select Unit'));
 
         await waitFor(() => {
             expect(getByText('Select Block')).toBeTruthy();
         });
+
+        expect(supabase.from).toHaveBeenCalledWith('units');
+        expect(getByText('Block A')).toBeTruthy();
+        expect(getByText('Block B')).toBeTruthy();
     });
 
-    it('should load blocks on mount', async () => {
+    it('should call onSelect after drilling down block, floor, and unit', async () => {
         const { getByText } = render(
             <UnitSelector societyId={mockSocietyId} onSelect={mockOnSelect} />
         );
 
+        fireEvent.press(getByText('Select Unit'));
+
         await waitFor(() => {
-            expect(supabase.from).toHaveBeenCalledWith('blocks');
+            expect(getByText('Block A')).toBeTruthy();
         });
+
+        fireEvent.press(getByText('Block A'));
+        fireEvent.press(getByText('Floor 1'));
+        fireEvent.press(getByText('A-101'));
+
+        expect(mockOnSelect).toHaveBeenCalledWith('unit-1', 'A-101');
     });
 
-    it('should show error message when blocks fail to load', async () => {
-        (supabase.from as jest.Mock).mockImplementation(() => ({
-            select: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockResolvedValue({ data: null, error: new Error('Network error') }),
-        }));
+    it('should show empty state when units fail to load', async () => {
+        mockUnitsQuery({ data: null, error: new Error('Failed to load units') });
 
         const { getByText } = render(
             <UnitSelector societyId={mockSocietyId} onSelect={mockOnSelect} />
         );
 
+        fireEvent.press(getByText('Select Unit'));
+
         await waitFor(() => {
-            expect(getByText(/error/i)).toBeTruthy();
+            expect(getByText('No units found')).toBeTruthy();
         });
-    });
-
-    it('should call onSelect when unit is selected', async () => {
-        const { getByText } = render(
-            <UnitSelector societyId={mockSocietyId} onSelect={mockOnSelect} />
-        );
-
-        // Wait for blocks to load and select one
-        await waitFor(() => {
-            const blockButton = getByText('Block A');
-            fireEvent.press(blockButton);
-        });
-
-        // Select floor
-        await waitFor(() => {
-            const floorButton = getByText('Floor 1');
-            fireEvent.press(floorButton);
-        });
-
-        // Select unit
-        await waitFor(() => {
-            const unitButton = getByText('A-101');
-            fireEvent.press(unitButton);
-        });
-
-        expect(mockOnSelect).toHaveBeenCalledWith(expect.objectContaining({
-            id: 'unit-1',
-            unit_number: 'A-101',
-        }));
     });
 });

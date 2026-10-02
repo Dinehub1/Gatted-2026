@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Visitor = {
@@ -28,7 +28,7 @@ export default function MyVisitorsScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [filter, setFilter] = useState<'upcoming' | 'past'>('upcoming');
 
-    const loadVisitors = async () => {
+    const loadVisitors = useCallback(async () => {
         try {
             const userId = profile?.id;
             if (!userId) return;
@@ -57,11 +57,12 @@ export default function MyVisitorsScreen() {
             setIsLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [profile?.id, filter]);
 
     useEffect(() => {
         loadVisitors();
-    }, [profile?.id, filter]);
+    }, [profile?.id, filter, loadVisitors]);
+
 
     const onRefresh = () => {
         setRefreshing(true);

@@ -31,7 +31,7 @@ type PurposeId = typeof PURPOSE_OPTIONS[number]['id'];
 
 export default function WalkInVisitorScreen() {
     const router = useRouter();
-    const { currentRole, profile } = useAuth();
+    const { currentRole } = useAuth();
     const { recentUnits, addRecentUnit } = useRecentUnits();
 
     // Form state

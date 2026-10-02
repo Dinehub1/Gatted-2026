@@ -21,10 +21,6 @@ function RootLayoutNav() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const inGuardGroup = segments[0] === '(guard)';
-    const inResidentGroup = segments[0] === '(resident)';
-    const inManagerGroup = segments[0] === '(manager)';
-    const inAdminGroup = segments[0] === '(admin)';
 
     if (!isAuthenticated && !inAuthGroup) {
       // Redirect to login if not authenticated
@@ -53,7 +49,7 @@ function RootLayoutNav() {
         }
       }
     }
-  }, [isAuthenticated, isLoading, currentRole, segments]);
+  }, [isAuthenticated, isLoading, currentRole, segments, router]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -67,7 +63,7 @@ function RootLayoutNav() {
 
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </ThemeProvider>
   );
 }

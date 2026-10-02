@@ -3,7 +3,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { PageHeader, ParcelCard } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Parcel = {
@@ -23,7 +23,7 @@ export default function MyParcelsScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [filter, setFilter] = useState<'all' | 'pending' | 'collected'>('all');
 
-    const loadParcels = async () => {
+    const loadParcels = useCallback(async () => {
         try {
             if (!currentRole?.unit_id) return;
 
@@ -49,11 +49,12 @@ export default function MyParcelsScreen() {
             setIsLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [currentRole?.unit_id, filter]);
 
     useEffect(() => {
         loadParcels();
-    }, [currentRole?.unit_id, filter]);
+    }, [currentRole?.unit_id, filter, loadParcels]);
+
 
     const onRefresh = () => {
         setRefreshing(true);

@@ -49,7 +49,7 @@ export default function ResidentHome() {
         role: 'resident',
     });
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             const userId = profile?.id;
             if (!userId) return;
@@ -92,18 +92,19 @@ export default function ResidentHome() {
             setIsLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [profile?.id]);
 
     useEffect(() => {
         loadData();
-    }, [profile?.id]);
+    }, [profile?.id, loadData]);
+
 
     // Refresh data when screen comes into focus
     useFocusEffect(
         useCallback(() => {
             loadData();
             refreshVisitors();
-        }, [profile?.id, currentRole?.society_id])
+        }, [loadData, refreshVisitors])
     );
 
     const onRefresh = () => {
@@ -247,9 +248,8 @@ export default function ResidentHome() {
                     icon="construct-outline"
                     title="My Issues"
                     badge={issueSummary.open > 0 ? issueSummary.open : undefined}
-                    backgroundColor="#fecaca"
+                    variant="danger"
                     compact
-                    style={{ backgroundColor: '#ef4444' }}
                     onPress={() => router.push('/(resident)/my-issues')}
                 />
 
@@ -272,7 +272,7 @@ export default function ResidentHome() {
                 <ActionButton
                     icon="people-outline"
                     title="Manage Family"
-                    backgroundColor="#64748b"
+                    variant="info"
                     compact
                     onPress={() => router.push('/(resident)/family')}
                 />
@@ -280,7 +280,7 @@ export default function ResidentHome() {
                 <ActionButton
                     icon="add-circle-outline"
                     title="Raise Issue"
-                    backgroundColor="#ef4444"
+                    variant="danger"
                     compact
                     onPress={() => router.push('/(resident)/raise-issue')}
                 />
@@ -294,7 +294,7 @@ export default function ResidentHome() {
                 onPress={() => router.push('/(resident)/pre-approve-visitor')}
                 activeOpacity={0.9}
             >
-                <Ionicons name="add" size={22} color="#fff" />
+                <Ionicons name="add" size={22} color="#A3E635" />
                 <Text style={styles.floatingCtaText}>Pre-approve Visitor</Text>
             </TouchableOpacity>
         </View>
@@ -352,18 +352,20 @@ const styles = StyleSheet.create({
         bottom: 24,
         left: 20,
         right: 20,
-        backgroundColor: '#3b82f6',
+        backgroundColor: '#101A33',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 14,
         borderRadius: 14,
         gap: 8,
-        shadowColor: '#3b82f6',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(163, 230, 53, 0.35)',
+        shadowColor: '#0B1120',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 8,
     },
     floatingCtaText: {
         color: '#fff',

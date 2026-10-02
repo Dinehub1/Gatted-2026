@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -37,11 +37,8 @@ export default function VisitorCheckout() {
     const [searchQuery, setSearchQuery] = useState('');
     const [checkingOut, setCheckingOut] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchActiveVisitors();
-    }, [currentRole]);
 
-    const fetchActiveVisitors = async () => {
+    const fetchActiveVisitors = useCallback(async () => {
         if (!currentRole?.society_id) return;
         setLoading(true);
         try {
@@ -69,7 +66,11 @@ export default function VisitorCheckout() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentRole]);
+
+    useEffect(() => {
+        fetchActiveVisitors();
+    }, [currentRole, fetchActiveVisitors]);
 
     const handleCheckout = async (visitor: Visitor) => {
         Alert.alert(
@@ -92,7 +93,7 @@ export default function VisitorCheckout() {
         setCheckingOut(visitorId);
         try {
             // Use RPC function for proper validation and audit trail
-            const { data, error } = await supabase.rpc('checkout_visitor', {
+            const { error } = await supabase.rpc('checkout_visitor', {
                 visitor_uuid: visitorId,
                 guard_uuid: profile!.id
             });

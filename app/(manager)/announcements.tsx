@@ -33,7 +33,7 @@ export default function AnnouncementsManager() {
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    const loadAnnouncements = async () => {
+    const loadAnnouncements = useCallback(async () => {
         try {
             const societyId = currentRole?.society_id;
             if (!societyId) return;
@@ -65,12 +65,12 @@ export default function AnnouncementsManager() {
             setIsLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [currentRole?.society_id]);
 
     useFocusEffect(
         useCallback(() => {
             loadAnnouncements();
-        }, [currentRole?.society_id])
+        }, [loadAnnouncements])
     );
 
     const onRefresh = () => {

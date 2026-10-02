@@ -5,7 +5,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Issue = {
@@ -26,14 +26,6 @@ const priorityConfig = {
     urgent: { color: '#dc2626', bg: '#fecaca', label: 'Urgent' },
 };
 
-const statusConfig = {
-    open: { color: '#3b82f6', label: 'Open' },
-    'in-progress': { color: '#f59e0b', label: 'In Progress' },
-    resolved: { color: '#10b981', label: 'Resolved' },
-    closed: { color: '#64748b', label: 'Closed' },
-    rejected: { color: '#ef4444', label: 'Rejected' },
-};
-
 export default function MyIssuesScreen() {
     const { profile } = useAuth();
     const router = useRouter();
@@ -42,7 +34,7 @@ export default function MyIssuesScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [filter, setFilter] = useState<'all' | 'open' | 'resolved'>('all');
 
-    const loadIssues = async () => {
+    const loadIssues = useCallback(async () => {
         try {
             if (!profile?.id) return;
 
@@ -68,11 +60,12 @@ export default function MyIssuesScreen() {
             setIsLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [profile?.id, filter]);
 
     useEffect(() => {
         loadIssues();
-    }, [profile?.id, filter]);
+    }, [profile?.id, filter, loadIssues]);
+
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -90,7 +83,6 @@ export default function MyIssuesScreen() {
 
     const renderIssue = ({ item }: { item: Issue }) => {
         const priority = priorityConfig[item.priority] || priorityConfig.medium;
-        const status = statusConfig[item.status] || statusConfig.open;
 
         return (
             <View style={styles.issueCard}>

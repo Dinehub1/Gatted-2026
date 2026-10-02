@@ -5,27 +5,44 @@ import { act, renderHook } from '@testing-library/react-native';
 // Mock the auth-api module
 jest.mock('@/lib/auth-api');
 
-// Mock supabase module (for devLogin fallback)
-jest.mock('@/lib/supabase', () => ({
-    supabase: {
-        auth: {
-            signInWithPassword: jest.fn(),
+// Mock supabase module (for devLogin fallback and guard shift cleanup in signOut)
+jest.mock('@/lib/supabase', () => {
+    const queryChain: any = {};
+    Object.assign(queryChain, {
+        select: jest.fn(() => queryChain),
+        update: jest.fn(() => queryChain),
+        eq: jest.fn(() => queryChain),
+        is: jest.fn(() => queryChain),
+        limit: jest.fn(() => queryChain),
+        single: jest.fn(() => Promise.resolve({ data: null, error: null })),
+    });
+    return {
+        supabase: {
+            auth: {
+                signInWithPassword: jest.fn(),
+            },
+            from: jest.fn(() => queryChain),
         },
-    },
-    supabaseHelpers: {
-        getProfile: jest.fn(),
-        getUserRoles: jest.fn(),
-    },
-}));
+        supabaseHelpers: {
+            getProfile: jest.fn(),
+            getUserRoles: jest.fn(),
+        },
+    };
+});
 
 describe('AuthStore', () => {
     beforeEach(() => {
-        // Reset store state before each test
-        const { result } = renderHook(() => useAuthStore());
-        act(() => {
-            result.current.signOut();
-        });
         jest.clearAllMocks();
+        // Reset store state directly so tests don't depend on signOut side effects
+        useAuthStore.setState({
+            user: null,
+            session: null,
+            profile: null,
+            roles: [],
+            currentRole: null,
+            isAuthenticated: false,
+            isLoading: true,
+        });
     });
 
     describe('signInWithOTP', () => {
@@ -116,9 +133,12 @@ describe('AuthStore', () => {
             const { result } = renderHook(() => useAuthStore());
 
             // Set some initial state
-            await act(async () => {
-                result.current.user = { id: 'user-123' } as any;
-                result.current.isAuthenticated = true;
+            act(() => {
+                useAuthStore.setState({
+                    user: { id: 'user-123' } as any,
+                    profile: { id: 'user-123' } as any,
+                    isAuthenticated: true,
+                });
             });
 
             (authApi.signOut as jest.Mock).mockResolvedValue(undefined);

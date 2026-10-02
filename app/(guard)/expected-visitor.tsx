@@ -3,7 +3,7 @@ import { supabaseHelpers } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 type VerifyMode = 'otp' | 'qr';
@@ -29,11 +29,8 @@ export default function ExpectedVisitorScreen() {
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
 
-    useEffect(() => {
-        loadExpectedVisitors();
-    }, []);
 
-    const loadExpectedVisitors = async () => {
+    const loadExpectedVisitors = useCallback(async () => {
         if (!currentRole?.society_id) return;
 
         setLoadingVisitors(true);
@@ -44,7 +41,11 @@ export default function ExpectedVisitorScreen() {
             setExpectedVisitors(data);
         }
         setLoadingVisitors(false);
-    };
+    }, [currentRole?.society_id]);
+
+    useEffect(() => {
+        loadExpectedVisitors();
+    }, [loadExpectedVisitors]);
 
     const checkInVisitor = async (visitorId: string, visitorName: string, otp?: string) => {
         setIsLoading(true);
@@ -124,7 +125,7 @@ export default function ExpectedVisitorScreen() {
 
             await checkInVisitor(visitor.id, visitorName || visitor.visitor_name, qrOtp);
             setScanned(false);
-        } catch (e) {
+        } catch {
             Alert.alert('Error', 'Could not read QR code', [
                 { text: 'OK', onPress: () => setScanned(false) }
             ]);

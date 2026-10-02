@@ -35,7 +35,6 @@ export default function GuardHome() {
 
     // Visitor approval for pending/approved visitors
     const {
-        pendingVisitors,
         approvedVisitors,
         pendingCount,
         approvedCount,
@@ -59,7 +58,7 @@ export default function GuardHome() {
             refreshActivities();
             refreshShift();
             refreshVisitors();
-        }, [societyId, guardId])
+        }, [refreshStats, refreshActivities, refreshShift, refreshVisitors])
     );
 
     const onRefresh = useCallback(async () => {
@@ -71,7 +70,7 @@ export default function GuardHome() {
     const handleStartShift = async () => {
         try {
             await startShift();
-        } catch (error) {
+        } catch {
             Alert.alert('Error', 'Failed to start shift. Please try again.');
         }
     };
@@ -88,7 +87,7 @@ export default function GuardHome() {
                     onPress: async () => {
                         try {
                             await endShift();
-                        } catch (error) {
+                        } catch {
                             Alert.alert('Error', 'Failed to end shift. Please try again.');
                         }
                     }
@@ -160,10 +159,12 @@ export default function GuardHome() {
         color: string;
         bgColor: string;
     }) => (
-        <View style={[styles.statItem, { backgroundColor: bgColor }]}>
+        <View style={styles.statItem}>
             <View style={styles.statHeader}>
                 <Text style={[styles.statValue, { color }]}>{value}</Text>
-                <Ionicons name={icon} size={20} color={color} />
+                <View style={[styles.statIconChip, { backgroundColor: bgColor }]}>
+                    <Ionicons name={icon} size={16} color={color} />
+                </View>
             </View>
             <Text style={styles.statLabel}>{label}</Text>
         </View>
@@ -364,9 +365,22 @@ const styles = StyleSheet.create({
     statItem: {
         width: '48%', // Approx half with gap
         padding: 12,
-        borderRadius: 12,
+        borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.03)',
+        borderColor: '#e2e8f0',
+        backgroundColor: '#fff',
+        shadowColor: '#0f172a',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        elevation: 2,
+    },
+    statIconChip: {
+        width: 30,
+        height: 30,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     statHeader: {
         flexDirection: 'row',

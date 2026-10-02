@@ -2,7 +2,7 @@ import { PageHeader, SectionTitle } from '@/components';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     RefreshControl,
@@ -35,13 +35,8 @@ export default function BlockUnits() {
     const [block, setBlock] = useState<Block | null>(null);
     const [units, setUnits] = useState<Unit[]>([]);
 
-    useEffect(() => {
-        if (id) {
-            fetchData();
-        }
-    }, [id]);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             // Fetch block info
             const { data: blockData } = await supabase
@@ -79,7 +74,13 @@ export default function BlockUnits() {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        if (id) {
+            fetchData();
+        }
+    }, [id, fetchData]);
 
     const handleRefresh = () => {
         setRefreshing(true);

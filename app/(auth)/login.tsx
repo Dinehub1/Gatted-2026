@@ -92,7 +92,7 @@ export default function LoginScreen() {
 
                             {/* Title */}
                             <Text style={styles.title}>
-                                {step === 'phone' ? 'Welcome Back (v2)' : 'Verify OTP'}
+                                {step === 'phone' ? 'Welcome Back' : 'Verify OTP'}
                             </Text>
                             <Text style={styles.subtitle}>
                                 {step === 'phone'
@@ -111,7 +111,7 @@ export default function LoginScreen() {
                                         <TextInput
                                             style={styles.phoneInput}
                                             placeholder="Enter 10-digit number"
-                                            placeholderTextColor="#9ca3af"
+                                            placeholderTextColor="#5B6B85"
                                             value={phone}
                                             onChangeText={(text) => {
                                                 const cleaned = text.replace(/[^0-9]/g, '');
@@ -135,10 +135,10 @@ export default function LoginScreen() {
                                         activeOpacity={0.8}
                                     >
                                         {isLoading ? (
-                                            <ActivityIndicator color="#fff" />
+                                            <ActivityIndicator color="#0B1120" />
                                         ) : (
                                             <>
-                                                <Ionicons name="send" size={20} color="#fff" style={{ marginRight: 8 }} />
+                                                <Ionicons name="send" size={20} color="#0B1120" style={{ marginRight: 8 }} />
                                                 <Text style={styles.buttonText}>Send OTP via WhatsApp</Text>
                                             </>
                                         )}
@@ -150,7 +150,7 @@ export default function LoginScreen() {
                                     <TextInput
                                         style={styles.otpInput}
                                         placeholder="● ● ● ● ● ●"
-                                        placeholderTextColor="#d1d5db"
+                                        placeholderTextColor="#3D4A63"
                                         value={otp}
                                         onChangeText={(text) => setOtp(text.replace(/[^0-9]/g, ''))}
                                         keyboardType="number-pad"
@@ -166,10 +166,10 @@ export default function LoginScreen() {
                                         activeOpacity={0.8}
                                     >
                                         {isLoading ? (
-                                            <ActivityIndicator color="#fff" />
+                                            <ActivityIndicator color="#0B1120" />
                                         ) : (
                                             <>
-                                                <Ionicons name="checkmark-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
+                                                <Ionicons name="checkmark-circle" size={20} color="#0B1120" style={{ marginRight: 8 }} />
                                                 <Text style={styles.buttonText}>Verify & Continue</Text>
                                             </>
                                         )}
@@ -183,7 +183,7 @@ export default function LoginScreen() {
                                         }}
                                         disabled={isLoading}
                                     >
-                                        <Ionicons name="arrow-back" size={16} color="#2563eb" />
+                                        <Ionicons name="arrow-back" size={16} color="#A3E635" />
                                         <Text style={styles.linkText}>Change Phone Number</Text>
                                     </TouchableOpacity>
 
@@ -251,7 +251,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#0B1120',
     },
     keyboardAvoidingView: {
         flex: 1,
@@ -270,32 +270,41 @@ const styles = StyleSheet.create({
         marginBottom: 32,
     },
     logoImage: {
-        width: 100,
-        height: 100,
-        borderRadius: 24,
+        width: 104,
+        height: 104,
+        borderRadius: 26,
         marginBottom: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(163, 230, 53, 0.35)',
+        shadowColor: '#A3E635',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.45,
+        shadowRadius: 24,
+        elevation: 12,
     },
     logoText: {
-        fontSize: 28,
+        fontSize: 30,
         fontWeight: '800',
-        color: '#1f2937',
-        letterSpacing: 2,
+        color: '#F1F5F9',
+        letterSpacing: 6,
     },
     tagline: {
-        fontSize: 14,
-        color: '#6b7280',
-        marginTop: 4,
+        fontSize: 13,
+        color: '#8B97AD',
+        marginTop: 6,
+        letterSpacing: 1.5,
+        textTransform: 'uppercase',
     },
     title: {
-        fontSize: 28,
+        fontSize: 26,
         fontWeight: '700',
-        color: '#111827',
+        color: '#F1F5F9',
         marginBottom: 8,
         textAlign: 'center',
     },
     subtitle: {
         fontSize: 15,
-        color: '#6b7280',
+        color: '#8B97AD',
         marginBottom: 32,
         textAlign: 'center',
         lineHeight: 22,
@@ -304,9 +313,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1.5,
-        borderColor: '#e5e7eb',
+        borderColor: '#243150',
         borderRadius: 14,
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#121C33',
         marginBottom: 20,
         overflow: 'hidden',
     },
@@ -315,9 +324,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 16,
-        backgroundColor: '#f3f4f6',
+        backgroundColor: '#16213B',
         borderRightWidth: 1,
-        borderRightColor: '#e5e7eb',
+        borderRightColor: '#243150',
     },
     flagEmoji: {
         fontSize: 20,
@@ -326,7 +335,7 @@ const styles = StyleSheet.create({
     prefixText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#374151',
+        color: '#CBD5E1',
     },
     phoneInput: {
         flex: 1,
@@ -334,13 +343,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         fontSize: 18,
         fontWeight: '500',
-        color: '#111827',
+        color: '#F1F5F9',
         letterSpacing: 1,
     },
     otpInput: {
         height: 64,
         borderWidth: 1.5,
-        borderColor: '#e5e7eb',
+        borderColor: '#243150',
         borderRadius: 14,
         paddingHorizontal: 20,
         fontSize: 28,
@@ -348,31 +357,31 @@ const styles = StyleSheet.create({
         letterSpacing: 12,
         textAlign: 'center',
         marginBottom: 20,
-        backgroundColor: '#f9fafb',
-        color: '#111827',
+        backgroundColor: '#121C33',
+        color: '#F1F5F9',
     },
     button: {
         height: 56,
-        backgroundColor: '#2563eb',
+        backgroundColor: '#A3E635',
         borderRadius: 14,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,
-        shadowColor: '#2563eb',
+        shadowColor: '#A3E635',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
+        elevation: 6,
     },
     buttonDisabled: {
-        backgroundColor: '#93c5fd',
+        backgroundColor: '#4D5A33',
         shadowOpacity: 0,
     },
     buttonText: {
-        color: '#fff',
+        color: '#0B1120',
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     linkButton: {
         flexDirection: 'row',
@@ -382,7 +391,7 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     linkText: {
-        color: '#2563eb',
+        color: '#A3E635',
         fontSize: 14,
         fontWeight: '500',
     },
@@ -391,19 +400,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     resendText: {
-        color: '#6b7280',
+        color: '#8B97AD',
         fontSize: 13,
     },
     devSection: {
         padding: 20,
         borderTopWidth: 1,
-        borderTopColor: '#f1f5f9',
-        backgroundColor: '#f8fafc',
+        borderTopColor: '#1B2440',
+        backgroundColor: '#0E1628',
     },
     devTitle: {
         fontSize: 11,
         fontWeight: '700',
-        color: '#64748b',
+        color: '#5B6B85',
         textTransform: 'uppercase',
         marginBottom: 12,
         textAlign: 'center',
@@ -430,7 +439,7 @@ const styles = StyleSheet.create({
     devNote: {
         textAlign: 'center',
         fontSize: 10,
-        color: '#94a3b8',
+        color: '#5B6B85',
     },
     accessory: {
         width: '100%',
@@ -438,7 +447,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'flex-end',
         alignItems: 'center',
-        backgroundColor: '#f1f5f9',
+        backgroundColor: '#16213B',
         paddingHorizontal: 8,
     },
 });

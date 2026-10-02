@@ -117,7 +117,7 @@ export default function RaiseIssueScreen() {
                     const response = await fetch(photoUri);
                     const blob = await response.blob();
 
-                    const { data: uploadData, error: uploadError } = await supabase.storage
+                    const { error: uploadError } = await supabase.storage
                         .from('issue-photos')
                         .upload(filePath, blob, {
                             contentType: `image/${fileExt}`,

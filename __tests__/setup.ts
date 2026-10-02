@@ -6,6 +6,13 @@ jest.mock('@react-native-async-storage/async-storage', () =>
     require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
+// react-native 0.81's built-in jest mock for ActivityIndicator crashes under
+// react-test-renderer 19; replace it with a plain host component
+jest.mock(
+    'react-native/Libraries/Components/ActivityIndicator/ActivityIndicator',
+    () => ({ __esModule: true, default: 'ActivityIndicator' })
+);
+
 // Mock Expo modules
 jest.mock('expo-router', () => ({
     useRouter: jest.fn(() => ({

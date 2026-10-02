@@ -3,7 +3,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Visitor = {
@@ -27,7 +27,7 @@ export default function VisitorsScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [filter, setFilter] = useState<'all' | 'today' | 'pending'>('today');
 
-    const loadVisitors = async () => {
+    const loadVisitors = useCallback(async () => {
         try {
             const societyId = currentRole?.society_id;
             if (!societyId) return;
@@ -65,11 +65,12 @@ export default function VisitorsScreen() {
             setIsLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [currentRole?.society_id, filter]);
 
     useEffect(() => {
         loadVisitors();
-    }, [currentRole?.society_id, filter]);
+    }, [currentRole?.society_id, filter, loadVisitors]);
+
 
     const onRefresh = () => {
         setRefreshing(true);

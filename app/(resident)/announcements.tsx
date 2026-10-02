@@ -3,7 +3,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { AnnouncementCard, PageHeader } from '@/components';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Announcement = {
@@ -24,7 +24,7 @@ export default function AnnouncementsScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [filter, setFilter] = useState<'unread' | 'all'>('unread');
 
-    const loadAnnouncements = async () => {
+    const loadAnnouncements = useCallback(async () => {
         try {
             if (!currentRole?.society_id || !profile?.id) return;
 
@@ -53,11 +53,12 @@ export default function AnnouncementsScreen() {
             setIsLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [currentRole?.society_id, profile?.id, filter]);
 
     useEffect(() => {
         loadAnnouncements();
-    }, [currentRole?.society_id, profile?.id, filter]);
+    }, [currentRole?.society_id, profile?.id, filter, loadAnnouncements]);
+
 
     const onRefresh = () => {
         setRefreshing(true);
